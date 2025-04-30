@@ -762,27 +762,27 @@ const Chat = () => {
       {showAuthMessage ? (
         <Stack className={styles.chatEmptyState}>
           <ShieldLockRegular
-            className={styles.chatIcon}
-            style={{ color: 'darkorange', height: '200px', width: '200px' }}
+            className={`${styles.chatIcon} ${styles.authIcon}`}
           />
           <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
           <h2 className={styles.chatEmptyStateSubtitle}>
             This app does not have authentication configured. Please add an identity provider by finding your app in the{' '}
-            <a href="https://portal.azure.com/" target="_blank">
+            <a href="https://portal.azure.com/" target="_blank" className={styles.authMessageLink}>
               Azure Portal
             </a>
             and following{' '}
             <a
               href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization"
-              target="_blank">
+              target="_blank"
+              className={styles.authMessageLink}>
               these instructions
             </a>
             .
           </h2>
-          <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
+          <h2 className={`${styles.chatEmptyStateSubtitle} ${styles.authMessageTitle}`}>
             <strong>Authentication configuration takes a few minutes to apply. </strong>
           </h2>
-          <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
+          <h2 className={`${styles.chatEmptyStateSubtitle} ${styles.authMessageTitle}`}>
             <strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong>
           </h2>
         </Stack>
@@ -796,7 +796,11 @@ const Chat = () => {
                 <h2 className={styles.chatEmptyStateSubtitle}>{ui?.chat_description}</h2>
               </Stack>
             ) : (
-              <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">
+              <div 
+                className={styles.chatMessageStream} 
+                style={{ marginBottom: isLoading ? '40px' : '0px' }} 
+                role="log"
+              >
                 {messages.map((answer, index) => (
                   <>
                     {answer.role === 'user' ? (
@@ -823,7 +827,7 @@ const Chat = () => {
                     ) : answer.role === ERROR ? (
                       <div className={styles.chatMessageError}>
                         <Stack horizontal className={styles.chatMessageErrorContent}>
-                          <ErrorCircleRegular className={styles.errorIcon} style={{ color: 'rgba(182, 52, 67, 1)' }} />
+                          <ErrorCircleRegular className={styles.errorIcon} />
                           <span>Error</span>
                         </Stack>
                         <span className={styles.chatMessageErrorContent}>{typeof answer.content === "string" && answer.content}</span>
@@ -871,20 +875,10 @@ const Chat = () => {
                   <CommandBarButton
                     role="button"
                     styles={{
-                      icon: {
-                        color: '#FFFFFF'
-                      },
-                      iconDisabled: {
-                        color: '#BDBDBD !important'
-                      },
-                      root: {
-                        color: '#FFFFFF',
-                        background:
-                          'radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)'
-                      },
-                      rootDisabled: {
-                        background: '#F0F0F0'
-                      }
+                      icon: styles.commandButtonIcon,
+                      iconDisabled: styles.commandButtonIconDisabled,
+                      root: styles.commandButtonRoot,
+                      rootDisabled: styles.commandButtonRootDisabled
                     }}
                     className={styles.newChatIcon}
                     iconProps={{ iconName: 'Add' }}
@@ -896,20 +890,10 @@ const Chat = () => {
                 <CommandBarButton
                   role="button"
                   styles={{
-                    icon: {
-                      color: '#FFFFFF'
-                    },
-                    iconDisabled: {
-                      color: '#BDBDBD !important'
-                    },
-                    root: {
-                      color: '#FFFFFF',
-                      background:
-                        'radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)'
-                    },
-                    rootDisabled: {
-                      background: '#F0F0F0'
-                    }
+                    icon: styles.commandButtonIcon,
+                    iconDisabled: styles.commandButtonIconDisabled,
+                    root: styles.commandButtonRoot,
+                    rootDisabled: styles.commandButtonRootDisabled
                   }}
                   className={
                     appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured

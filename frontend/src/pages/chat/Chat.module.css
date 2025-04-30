@@ -394,6 +394,57 @@ a {
   border-radius: 4px;
 }
 
+/* Command button styles */
+.commandButton {
+  color: var(--snow-white);
+}
+
+.commandButtonIcon {
+  color: var(--snow-white);
+}
+
+.commandButtonIconDisabled {
+  color: var(--sand-grey) !important;
+}
+
+.commandButtonRoot {
+  color: var(--snow-white);
+  background: var(--true-blue);
+}
+
+.commandButtonRootDisabled {
+  background: var(--sand-grey);
+  opacity: 0.5;
+}
+
+/* Error styles */
+.errorIcon {
+  color: var(--lava-red);
+}
+
+/* Auth message styles */
+.authIcon {
+  color: var(--yellow-sun);
+  height: 200px;
+  width: 200px;
+}
+
+.authMessageTitle {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 20px;
+  color: var(--true-blue);
+}
+
+.authMessageLink {
+  color: var(--sea-blue);
+  text-decoration: none;
+}
+
+.authMessageLink:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .chatInput {
     width: 90%;
