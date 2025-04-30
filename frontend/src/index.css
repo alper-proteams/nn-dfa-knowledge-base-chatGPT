@@ -10,8 +10,9 @@ body {
 }
 
 html {
-  background: #f2f2f2;
+  background: #FFFFFF; /* Snow White from CVI */
   font-family:
+    'Apis',
     'Segoe UI',
     'Segoe UI Web (West European)',
     'Segoe UI',
@@ -22,8 +23,71 @@ html {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #001965; /* True Blue from CVI */
+}
+
+body {
+  line-height: 1.5;
 }
 
 #root {
   height: 100%;
+}
+
+/* Novo Nordisk CVI Color Variables */
+:root {
+  /* Primary Colors */
+  --true-blue: #001965;
+  --snow-white: #FFFFFF;
+  
+  /* Secondary Colors */
+  --sea-blue: #005AD2;
+  --ocean-green: #2A918B;
+  --light-blue: #3B97DE;
+  --forest-green: #3F9C35;
+  
+  /* Accent Colors */
+  --rose-pink: #EEA7BF;
+  --yellow-sun: #EAAB00;
+  --lava-red: #E6553F;
+  
+  /* Neutral Colors */
+  --granite-grey: #939AA7;
+  --sand-grey: #CCC5BD;
+}
+
+/* Basic element styling */
+a {
+  color: var(--sea-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  background-color: var(--true-blue);
+  color: var(--snow-white);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Apis', 'Segoe UI', sans-serif;
+}
+
+button:hover {
+  background-color: var(--sea-blue);
+}
+
+input, textarea, select {
+  border: 1px solid var(--sand-grey);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: 'Apis', 'Segoe UI', sans-serif;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--light-blue);
+  border-color: var(--light-blue);
 }
