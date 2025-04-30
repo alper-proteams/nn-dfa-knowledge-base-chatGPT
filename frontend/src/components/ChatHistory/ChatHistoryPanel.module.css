@@ -22,7 +22,7 @@
 }
 
 .itemCell:hover {
-  background: #e6e6e6;
+  background: rgba(0, 25, 101, 0.1); /* True Blue with transparency */
 }
 
 .itemButton {
@@ -31,15 +31,15 @@
   align-items: center;
   width: 28px;
   height: 28px;
-  border: 1px solid #d1d1d1;
+  border: 1px solid var(--sand-grey);
   border-radius: 5px;
-  background-color: white;
+  background-color: var(--snow-white);
   margin: auto 2.5px;
   cursor: pointer;
 }
 
 .itemButton:hover {
-  background-color: #e6e6e6;
+  background-color: rgba(0, 25, 101, 0.1); /* True Blue with transparency */
 }
 
 .chatGroup {
@@ -63,6 +63,7 @@
   font-weight: 600;
   margin-bottom: 5px;
   padding-left: 15px;
+  color: var(--true-blue);
 }
 
 .chatTitle {
@@ -70,6 +71,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: var(--true-blue);
 }
 
 @media (max-width: 480px) {
