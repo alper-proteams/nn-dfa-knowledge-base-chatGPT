@@ -1,3 +1,25 @@
+/* Novo Nordisk CVI Color Variables */
+:root {
+  /* Primary Colors */
+  --true-blue: #001965;
+  --snow-white: #FFFFFF;
+  
+  /* Secondary Colors */
+  --sea-blue: #005AD2;
+  --ocean-green: #2A918B;
+  --light-blue: #3B97DE;
+  --forest-green: #3F9C35;
+  
+  /* Accent Colors */
+  --rose-pink: #EEA7BF;
+  --yellow-sun: #EAAB00;
+  --lava-red: #E6553F;
+  
+  /* Neutral Colors */
+  --granite-grey: #939AA7;
+  --sand-grey: #CCC5BD;
+}
+
 .container {
   flex: 1;
   display: flex;
@@ -20,7 +42,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #FFFFFF; /* Snow White from CVI */
+  background: var(--snow-white);
   box-shadow:
     0px 2px 4px rgba(0, 25, 101, 0.14),
     0px 0px 2px rgba(0, 25, 101, 0.12);
@@ -47,7 +69,7 @@
   line-height: 36px;
   margin-top: 36px;
   margin-bottom: 0px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
 }
 
 .chatEmptyStateSubtitle {
@@ -59,7 +81,7 @@
   align-items: flex-end;
   text-align: center;
   letter-spacing: -0.01em;
-  color: #939AA7; /* Granite Grey from CVI */
+  color: var(--granite-grey);
 }
 
 .chatIcon {
@@ -89,7 +111,7 @@
   position: relative;
   display: flex;
   padding: 20px;
-  background: #3B97DE; /* Light Blue from CVI */
+  background: var(--light-blue);
   border-radius: 8px;
   box-shadow:
     0px 2px 4px rgba(0, 25, 101, 0.14),
@@ -98,7 +120,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 22px;
-  color: #FFFFFF; /* Snow White from CVI */
+  color: var(--snow-white);
   order: 0;
   flex-grow: 0;
   white-space: pre-wrap;
@@ -118,7 +140,7 @@
   box-shadow:
     rgba(230, 85, 63, 1) 1px 1px 2px,
     rgba(230, 85, 63, 1) 0px 0px 1px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -162,7 +184,7 @@
   height: 40px;
   left: 7px;
   top: 13px;
-  color: #ffffff;
+  color: var(--snow-white);
   border-radius: 4px;
   z-index: 1;
 }
@@ -178,7 +200,7 @@
   height: 40px;
   left: 7px;
   top: 66px;
-  color: #ffffff;
+  color: var(--snow-white);
   border-radius: 4px;
   z-index: 1;
 }
@@ -194,7 +216,7 @@
   height: 40px;
   left: 7px;
   top: 66px;
-  color: #ffffff;
+  color: var(--snow-white);
   border-radius: 4px;
   z-index: 1;
 }
@@ -212,14 +234,14 @@
   height: 32px;
   left: calc(50% - 161px / 2 + 25.8px);
   bottom: 116px;
-  border: 1px solid #CCC5BD; /* Sand Grey from CVI */
+  border: 1px solid var(--sand-grey);
   border-radius: 16px;
 }
 
 .stopGeneratingIcon {
   width: 14px;
   height: 14px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
 }
 
 .stopGeneratingText {
@@ -231,7 +253,7 @@
   line-height: 20px;
   display: flex;
   align-items: center;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -243,7 +265,7 @@
   align-items: flex-start;
   padding: 16px 16px;
   gap: 8px;
-  background: #FFFFFF; /* Snow White from CVI */
+  background: var(--snow-white);
   box-shadow:
     0px 2px 4px rgba(0, 25, 101, 0.14),
     0px 0px 2px rgba(0, 25, 101, 0.12);
@@ -266,7 +288,7 @@
   font-weight: 600;
   font-size: 18px;
   line-height: 24px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -275,11 +297,11 @@
 .citationPanelDismiss {
   width: 18px;
   height: 18px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
 }
 
 .citationPanelDismiss:hover {
-  background-color: #CCC5BD; /* Sand Grey from CVI */
+  background-color: var(--sand-grey);
   cursor: pointer;
 }
 
@@ -288,7 +310,7 @@
   font-weight: 600;
   font-size: 16px;
   line-height: 22px;
-  color: #001965; /* True Blue from CVI */
+  color: var(--true-blue);
   margin-top: 12px;
   margin-bottom: 12px;
 }
@@ -303,7 +325,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #939AA7; /* Granite Grey from CVI */
+  color: var(--granite-grey);
   flex: none;
   order: 1;
   align-self: stretch;
@@ -314,7 +336,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--sand-grey);
   margin-top: 12px;
 }
 
@@ -348,19 +370,19 @@ a {
   font-weight: 600;
   font-size: 12px;
   line-height: 16px;
-  color: #005AD2; /* Sea Blue from CVI */
+  color: var(--sea-blue);
   flex-direction: row;
   align-items: center;
   padding: 4px 6px;
   gap: 4px;
-  border: 1px solid #CCC5BD; /* Sand Grey from CVI */
+  border: 1px solid var(--sand-grey);
   border-radius: 4px;
 }
 
 .viewSourceButton:hover {
   text-decoration: underline;
   cursor: pointer;
-  background-color: rgba(0, 90, 210, 0.1); /* Sea Blue with transparency */
+  background-color: rgba(0, 90, 210, 0.1);
 }
 
 .uploadedImageChat {
