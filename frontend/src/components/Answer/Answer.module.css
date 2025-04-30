@@ -4,10 +4,10 @@
   align-items: flex-start;
   padding: 8.1285px;
   gap: 5.42px;
-  background: #ffffff;
+  background: var(--snow-white);
   box-shadow:
-    0px 1px 2px rgba(0, 0, 0, 0.14),
-    0px 0px 2px rgba(0, 0, 0, 0.12);
+    0px 1px 2px rgba(0, 25, 101, 0.14),
+    0px 0px 2px rgba(0, 25, 101, 0.12);
   border-radius: 5.419px;
 }
 
@@ -16,7 +16,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #323130;
+  color: var(--true-blue);
   flex: none;
   order: 1;
   align-self: stretch;
@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  color: #707070;
+  color: var(--granite-grey);
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -76,13 +76,13 @@
   font-size: 12px;
   line-height: 16px;
 
-  color: #115ea3;
+  color: var(--sea-blue);
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 4px 6px;
   gap: 4px;
-  border: 1px solid #d1d1d1;
+  border: 1px solid var(--sand-grey);
   border-radius: 4px;
 }
 
@@ -100,7 +100,7 @@
   padding: 0px;
   width: 14px;
   height: 14px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--sand-grey);
   border-radius: 4px;
   flex: none;
   flex-grow: 0;
@@ -110,7 +110,7 @@
   font-size: 10px;
   line-height: 14px;
   text-align: center;
-  color: #424242;
+  color: var(--true-blue);
   cursor: pointer;
 }
 
@@ -126,7 +126,7 @@
   align-items: center;
   padding: 0px;
   margin-top: 4px;
-  color: #616161;
+  color: var(--granite-grey);
   font-size: 10px;
 }
 
@@ -143,7 +143,7 @@
   line-height: 16px;
   display: flex;
   align-items: center;
-  color: #616161;
+  color: var(--granite-grey);
 }
 
 .accordionTitle:hover {
@@ -159,7 +159,7 @@
   padding: 0px;
   width: 14px;
   height: 14px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--sand-grey);
   border-radius: 4px;
   flex: none;
   order: 2;
@@ -170,7 +170,7 @@
   font-size: 10px;
   line-height: 14px;
   text-align: center;
-  color: #424242;
+  color: var(--true-blue);
   cursor: pointer;
 }
 
