@@ -28,8 +28,11 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   
   // Auto-send the initial question after a delay
   useEffect(() => {
+    console.log('QuestionInput initialQuestion:', initialQuestion);
     if (initialQuestion && initialQuestion.trim()) {
+      console.log('Setting up auto-send timer for question:', initialQuestion);
       const timer = setTimeout(() => {
+        console.log('Auto-send timer triggered, sending question:', initialQuestion);
         sendQuestion();
       }, 1500); // 1.5 second delay
       
@@ -37,11 +40,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       
       return () => {
         if (autoSendTimer) {
+          console.log('Clearing auto-send timer');
           clearTimeout(autoSendTimer);
         }
       };
     }
-  }, []);
+  }, [initialQuestion]); // Add initialQuestion as a dependency
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,16 +65,21 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   };
 
   const sendQuestion = () => {
+    console.log('sendQuestion called, question:', question, 'disabled:', disabled);
     if (disabled || !question.trim()) {
+      console.log('Not sending question - disabled or empty question');
       return
     }
 
     const questionTest: ChatMessage["content"] = base64Image ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }] : question.toString();
+    console.log('Prepared question content:', questionTest);
 
     if (conversationId && questionTest !== undefined) {
+      console.log('Sending question with conversationId:', conversationId);
       onSend(questionTest, conversationId)
       setBase64Image(null)
     } else {
+      console.log('Sending question without conversationId');
       onSend(questionTest)
       setBase64Image(null)
     }
