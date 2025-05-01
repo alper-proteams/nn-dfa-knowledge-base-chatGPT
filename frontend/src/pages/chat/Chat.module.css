@@ -85,10 +85,44 @@
 }
 
 .chatIcon {
-  height: 600px;
+  height: 300px;
   width: auto;
   position: relative;
   overflow: hidden;
+}
+
+.welcomeContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  width: 100%;
+}
+
+.welcomeText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.welcomeTitle {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  color: var(--true-blue);
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.welcomeSubtitle {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 24px;
+  color: var(--granite-grey);
+  text-align: left;
 }
 
 .chatIcon::before {

@@ -791,11 +791,15 @@ const Chat = () => {
           <div className={styles.chatContainer}>
             {!messages || messages.length < 1 ? (
               <Stack className={styles.chatEmptyState}>
-                <div className={styles.chatIcon}>
-                  <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
+                <div className={styles.welcomeContainer}>
+                  <div className={styles.chatIcon}>
+                    <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
+                  </div>
+                  <div className={styles.welcomeText}>
+                    <h1 className={styles.welcomeTitle}>Novo Nordisk DFA Knowledge Base AI Assistant</h1>
+                    <h2 className={styles.welcomeSubtitle}>{ui?.chat_description || "This chatbot is configured to answer your questions"}</h2>
+                  </div>
                 </div>
-                <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
-                <h2 className={styles.chatEmptyStateSubtitle}>{ui?.chat_description}</h2>
               </Stack>
             ) : (
               <div 
