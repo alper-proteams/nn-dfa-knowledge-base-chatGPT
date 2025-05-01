@@ -791,15 +791,11 @@ const Chat = () => {
           <div className={styles.chatContainer}>
             {!messages || messages.length < 1 ? (
               <Stack className={styles.chatEmptyState}>
-                <div className={styles.welcomeContainer}>
-                  <div className={styles.chatIcon}>
-                    <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
-                  </div>
-                  <div className={styles.welcomeText}>
-                    <h1 className={styles.welcomeTitle}>Novo Nordisk<br />DFA Knowledge Base AI Assistant</h1>
-                    <h2 className={styles.welcomeSubtitle}>"Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation. <br /><br />For additional support, please reach out to YJLH team."</h2>
-                  </div>
+                <div className={styles.chatIcon}>
+                  <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
                 </div>
+                <h1 className={styles.chatEmptyStateTitle}>Novo Nordisk<br />DFA Knowledge Base AI Assistant</h1>
+                <h2 className={styles.chatEmptyStateSubtitle}>"Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation.<br /><br />For additional support, please reach out to YJLH team."</h2>
               </Stack>
             ) : (
               <div 
