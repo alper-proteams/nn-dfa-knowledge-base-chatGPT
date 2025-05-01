@@ -34,16 +34,29 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       console.log('[QUERY_PARAM_DEBUG] Setting up typing effect for question:', initialQuestion);
       
       // Initialize with the first character and then add the rest one by one
+      console.log('[TYPING_DEBUG] Starting typing effect with initial question:', initialQuestion);
+      console.log('[TYPING_DEBUG] First character:', initialQuestion.charAt(0));
       setQuestion(initialQuestion.charAt(0));
       let currentIndex = 1;
       const fullText = initialQuestion;
+      console.log('[TYPING_DEBUG] Full text length:', fullText.length);
       
       // Function to add the next character
       const typeNextCharacter = () => {
         if (currentIndex < fullText.length) {
-          setQuestion(prev => prev + fullText.charAt(currentIndex));
+          console.log('[TYPING_DEBUG] Adding character at index:', currentIndex);
+          console.log('[TYPING_DEBUG] Character to add:', fullText.charAt(currentIndex));
+          console.log('[TYPING_DEBUG] Current question before update:', question);
+          
+          // Use a callback to ensure we're working with the latest state
+          setQuestion(prev => {
+            const newValue = prev + fullText.charAt(currentIndex);
+            console.log('[TYPING_DEBUG] New question value:', newValue);
+            return newValue;
+          });
+          
           currentIndex++;
-          // Continue typing with a slight delay between characters (50ms)
+          // Continue typing with a slight delay between characters (100ms)
           setAutoSendTimer(setTimeout(typeNextCharacter, 100));
         } else {
           // Typing finished, wait a moment before sending
@@ -76,7 +89,11 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       };
       
       // Start the typing effect with a small initial delay
-      setAutoSendTimer(setTimeout(typeNextCharacter, 300));
+      console.log('[TYPING_DEBUG] Setting initial delay before starting typing effect');
+      setAutoSendTimer(setTimeout(() => {
+        console.log('[TYPING_DEBUG] Initial delay completed, starting typing effect');
+        typeNextCharacter();
+      }, 300));
       
       return () => {
         if (autoSendTimer) {
