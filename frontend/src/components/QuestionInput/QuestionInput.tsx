@@ -48,12 +48,10 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
           console.log('[TYPING_DEBUG] Character to add:', fullText.charAt(currentIndex));
           console.log('[TYPING_DEBUG] Current question before update:', question);
           
-          // Use a callback to ensure we're working with the latest state
-          setQuestion(prev => {
-            const newValue = prev + fullText.charAt(currentIndex);
-            console.log('[TYPING_DEBUG] New question value:', newValue);
-            return newValue;
-          });
+          // Create a complete string up to the current index
+          const newValue = fullText.substring(0, currentIndex + 1);
+          console.log('[TYPING_DEBUG] New question value:', newValue);
+          setQuestion(newValue);
           
           currentIndex++;
           // Continue typing with a slight delay between characters (100ms)
