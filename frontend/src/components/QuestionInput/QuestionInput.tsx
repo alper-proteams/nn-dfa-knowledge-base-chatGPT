@@ -44,7 +44,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
           setQuestion(prev => prev + fullText.charAt(currentIndex));
           currentIndex++;
           // Continue typing with a slight delay between characters (50ms)
-          setAutoSendTimer(setTimeout(typeNextCharacter, 50));
+          setAutoSendTimer(setTimeout(typeNextCharacter, 100));
         } else {
           // Typing finished, wait a moment before sending
           setAutoSendTimer(setTimeout(() => {
@@ -75,8 +75,8 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         }
       };
       
-      // Start the typing effect
-      typeNextCharacter();
+      // Start the typing effect with a small initial delay
+      setAutoSendTimer(setTimeout(typeNextCharacter, 300));
       
       return () => {
         if (autoSendTimer) {
