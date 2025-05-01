@@ -114,10 +114,10 @@ const Chat = () => {
       
       // Check for question in URL parameters
       const questionParam = getQueryParam('q');
-      console.log('URL query parameter "q":', questionParam);
+      console.log('[QUERY_PARAM_DEBUG] URL query parameter "q":', questionParam);
       if (questionParam) {
         const decodedQuestion = decodeURIComponent(questionParam);
-        console.log('Decoded question from URL:', decodedQuestion);
+        console.log('[QUERY_PARAM_DEBUG] Decoded question from URL:', decodedQuestion);
         setInitialQuestion(decodedQuestion);
       }
     }
