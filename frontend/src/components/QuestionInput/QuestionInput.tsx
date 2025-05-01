@@ -30,59 +30,53 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   // Implement typing effect for initial question
   useEffect(() => {
     console.log('[QUERY_PARAM_DEBUG] QuestionInput initialQuestion:', initialQuestion);
-    if (initialQuestion && initialQuestion.trim()) {
+    if (initialQuestion && initialQuestion.trim() && !questionSentRef.current) {
       console.log('[QUERY_PARAM_DEBUG] Setting up typing effect for question:', initialQuestion);
       
-      // Use a ref to track if we've already sent this question
-      const hasBeenSent = useRef(false);
+      // Start with empty string and add one character at a time
+      setQuestion('');
+      let currentIndex = 0;
+      const fullText = initialQuestion;
       
-      // Only proceed if we haven't sent this question yet
-      if (!hasBeenSent.current) {
-        // Start with empty string and add one character at a time
-        setQuestion('');
-        let currentIndex = 0;
-        const fullText = initialQuestion;
-        
-        // Function to add the next character
-        const typeNextCharacter = () => {
-          if (currentIndex < fullText.length) {
-            setQuestion(prev => prev + fullText.charAt(currentIndex));
-            currentIndex++;
-            // Continue typing with a slight delay between characters (50ms)
-            setAutoSendTimer(setTimeout(typeNextCharacter, 50));
-          } else {
-            // Typing finished, wait a moment before sending
-            setAutoSendTimer(setTimeout(() => {
-              console.log('[QUERY_PARAM_DEBUG] Typing effect completed, sending question:', fullText);
-              if (disabled) {
-                console.log('[QUERY_PARAM_DEBUG] Not sending question - disabled');
-                return;
-              }
-              
-              // Mark as sent to prevent infinite loops
-              hasBeenSent.current = true;
-              
-              const questionContent = fullText.toString();
-              console.log('[QUERY_PARAM_DEBUG] Prepared question content:', questionContent);
-              
-              if (conversationId) {
-                console.log('[QUERY_PARAM_DEBUG] Sending question with conversationId:', conversationId);
-                onSend(questionContent, conversationId);
-              } else {
-                console.log('[QUERY_PARAM_DEBUG] Sending question without conversationId');
-                onSend(questionContent);
-              }
-              
-              if (clearOnSend) {
-                setQuestion('');
-              }
-            }, 500)); // Short pause after typing completes before sending
-          }
-        };
-        
-        // Start the typing effect
-        typeNextCharacter();
-      }
+      // Function to add the next character
+      const typeNextCharacter = () => {
+        if (currentIndex < fullText.length) {
+          setQuestion(prev => prev + fullText.charAt(currentIndex));
+          currentIndex++;
+          // Continue typing with a slight delay between characters (50ms)
+          setAutoSendTimer(setTimeout(typeNextCharacter, 50));
+        } else {
+          // Typing finished, wait a moment before sending
+          setAutoSendTimer(setTimeout(() => {
+            console.log('[QUERY_PARAM_DEBUG] Typing effect completed, sending question:', fullText);
+            if (disabled) {
+              console.log('[QUERY_PARAM_DEBUG] Not sending question - disabled');
+              return;
+            }
+            
+            // Mark as sent to prevent infinite loops
+            questionSentRef.current = true;
+            
+            const questionContent = fullText.toString();
+            console.log('[QUERY_PARAM_DEBUG] Prepared question content:', questionContent);
+            
+            if (conversationId) {
+              console.log('[QUERY_PARAM_DEBUG] Sending question with conversationId:', conversationId);
+              onSend(questionContent, conversationId);
+            } else {
+              console.log('[QUERY_PARAM_DEBUG] Sending question without conversationId');
+              onSend(questionContent);
+            }
+            
+            if (clearOnSend) {
+              setQuestion('');
+            }
+          }, 500)); // Short pause after typing completes before sending
+        }
+      };
+      
+      // Start the typing effect
+      typeNextCharacter();
       
       return () => {
         if (autoSendTimer) {
