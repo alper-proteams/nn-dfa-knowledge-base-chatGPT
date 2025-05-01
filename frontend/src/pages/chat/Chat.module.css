@@ -57,6 +57,9 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .chatEmptyStateTitle {
@@ -82,6 +85,8 @@
   text-align: center;
   letter-spacing: -0.01em;
   color: var(--granite-grey);
+  max-width: 800px;
+  width: 100%;
 }
 
 .chatIcon {
