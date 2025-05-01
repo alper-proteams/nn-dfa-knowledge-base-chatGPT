@@ -257,6 +257,7 @@
   left: 7px;
   top: 13px;
   color: var(--snow-white);
+  background-color: var(--true-blue);
   border-radius: 4px;
   z-index: 1;
 }
@@ -273,6 +274,7 @@
   left: 7px;
   top: 66px;
   color: var(--snow-white);
+  background-color: var(--true-blue);
   border-radius: 4px;
   z-index: 1;
 }
@@ -289,6 +291,7 @@
   left: 7px;
   top: 66px;
   color: var(--snow-white);
+  background-color: var(--true-blue);
   border-radius: 4px;
   z-index: 1;
 }
@@ -473,6 +476,7 @@ a {
 
 .commandButtonIcon {
   color: var(--snow-white);
+  background: transparent;
 }
 
 .commandButtonIconDisabled {
