@@ -477,7 +477,6 @@ a {
 
 .commandButtonIconDisabled {
   color: var(--sand-grey) !important;
-  background: var(--true-blue);
 }
 
 .commandButtonRoot {
@@ -488,6 +487,7 @@ a {
 .commandButtonRootDisabled {
   background: var(--sand-grey);
   opacity: 0.5;
+  color: var(--sand-grey) !important;
 }
 
 /* Error styles */
