@@ -33,9 +33,9 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     if (initialQuestion && initialQuestion.trim() && !questionSentRef.current) {
       console.log('[QUERY_PARAM_DEBUG] Setting up typing effect for question:', initialQuestion);
       
-      // Start with empty string and add one character at a time
-      setQuestion('');
-      let currentIndex = 0;
+      // Initialize with the first character and then add the rest one by one
+      setQuestion(initialQuestion.charAt(0));
+      let currentIndex = 1;
       const fullText = initialQuestion;
       
       // Function to add the next character
