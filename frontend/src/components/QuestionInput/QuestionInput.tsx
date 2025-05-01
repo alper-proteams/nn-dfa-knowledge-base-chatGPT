@@ -15,14 +15,33 @@ interface Props {
   placeholder?: string
   clearOnSend?: boolean
   conversationId?: string
+  initialQuestion?: string
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
-  const [question, setQuestion] = useState<string>('')
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId, initialQuestion }: Props) => {
+  const [question, setQuestion] = useState<string>(initialQuestion || '')
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [autoSendTimer, setAutoSendTimer] = useState<NodeJS.Timeout | null>(null);
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
+  
+  // Auto-send the initial question after a delay
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      const timer = setTimeout(() => {
+        sendQuestion();
+      }, 1500); // 1.5 second delay
+      
+      setAutoSendTimer(timer);
+      
+      return () => {
+        if (autoSendTimer) {
+          clearTimeout(autoSendTimer);
+        }
+      };
+    }
+  }, []);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

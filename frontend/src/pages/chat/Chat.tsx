@@ -14,6 +14,7 @@ import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import styles from './Chat.module.css'
 import ChatLogo from '../../assets/chat_ai_logo.png'
 import { XSSAllowTags } from '../../constants/sanatizeAllowables'
+import { getQueryParam } from '../../utils/urlParams'
 
 import {
   ChatMessage,
@@ -65,6 +66,7 @@ const Chat = () => {
   const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
+  const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -109,6 +111,12 @@ const Chat = () => {
   useEffect(() => {
     if (!appStateContext?.state.isLoading) {
       setLogo(ui?.chat_logo || ui?.logo || ChatLogo)
+      
+      // Check for question in URL parameters
+      const questionParam = getQueryParam('q');
+      if (questionParam) {
+        setInitialQuestion(decodeURIComponent(questionParam));
+      }
     }
   }, [appStateContext?.state.isLoading])
 
@@ -929,6 +937,7 @@ const Chat = () => {
                 conversationId={
                   appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
                 }
+                initialQuestion={initialQuestion || undefined}
               />
             </Stack>
           </div>
