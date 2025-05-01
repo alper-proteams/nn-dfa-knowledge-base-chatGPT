@@ -85,7 +85,7 @@
 }
 
 .chatIcon {
-  height: 62px;
+  height: 600px;
   width: auto;
 }
 
@@ -405,6 +405,7 @@ a {
 
 .commandButtonIconDisabled {
   color: var(--sand-grey) !important;
+  background: var(--true-blue);
 }
 
 .commandButtonRoot {
