@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { FontIcon, Stack, TextField } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
 
@@ -21,7 +21,7 @@ interface Props {
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId, initialQuestion }: Props) => {
   const [question, setQuestion] = useState<string>(initialQuestion || '')
   const [base64Image, setBase64Image] = useState<string | null>(null);
-  const [autoSendTimer, setAutoSendTimer] = useState<NodeJS.Timeout | null>(null);
+  const [autoSendTimer, setAutoSendTimer] = useState<number | null>(null);
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
