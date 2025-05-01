@@ -797,7 +797,7 @@ const Chat = () => {
                   </div>
                   <div className={styles.welcomeText}>
                     <h1 className={styles.welcomeTitle}>Novo Nordisk<br />DFA Knowledge Base AI Assistant</h1>
-                    <h2 className={styles.welcomeSubtitle}>{ui?.chat_description || "Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation. For additional support, please reach out to YJLH team."}</h2>
+                    <h2 className={styles.welcomeSubtitle}>"Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation. <br /><br />For additional support, please reach out to YJLH team."</h2>
                   </div>
                 </div>
               </Stack>
