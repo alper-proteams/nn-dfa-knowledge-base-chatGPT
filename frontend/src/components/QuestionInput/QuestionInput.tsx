@@ -31,10 +31,31 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
     console.log('[QUERY_PARAM_DEBUG] QuestionInput initialQuestion:', initialQuestion);
     if (initialQuestion && initialQuestion.trim()) {
       console.log('[QUERY_PARAM_DEBUG] Setting up auto-send timer for question:', initialQuestion);
-      const timer = setTimeout(() => {
+      // Create a special function to send the initial question directly
+      const sendInitialQuestion = () => {
         console.log('[QUERY_PARAM_DEBUG] Auto-send timer triggered, sending question:', initialQuestion);
-        sendQuestion();
-      }, 1500); // 1.5 second delay
+        if (disabled) {
+          console.log('[QUERY_PARAM_DEBUG] Not sending question - disabled');
+          return;
+        }
+        
+        const questionContent = initialQuestion.toString();
+        console.log('[QUERY_PARAM_DEBUG] Prepared question content:', questionContent);
+        
+        if (conversationId) {
+          console.log('[QUERY_PARAM_DEBUG] Sending question with conversationId:', conversationId);
+          onSend(questionContent, conversationId);
+        } else {
+          console.log('[QUERY_PARAM_DEBUG] Sending question without conversationId');
+          onSend(questionContent);
+        }
+        
+        if (clearOnSend) {
+          setQuestion('');
+        }
+      };
+      
+      const timer = setTimeout(sendInitialQuestion, 1500); // 1.5 second delay
       
       setAutoSendTimer(timer);
       
@@ -45,7 +66,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         }
       };
     }
-  }, [initialQuestion]); // Add initialQuestion as a dependency
+  }, [initialQuestion, disabled, conversationId, onSend, clearOnSend]); // Add all dependencies
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
