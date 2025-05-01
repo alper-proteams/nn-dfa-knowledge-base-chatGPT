@@ -796,7 +796,7 @@ const Chat = () => {
                     <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
                   </div>
                   <div className={styles.welcomeText}>
-                    <h1 className={styles.welcomeTitle}>Novo Nordisk DFA Knowledge Base AI Assistant</h1>
+                    <h1 className={styles.welcomeTitle}>Novo Nordisk<br />DFA Knowledge Base AI Assistant</h1>
                     <h2 className={styles.welcomeSubtitle}>{ui?.chat_description || "This chatbot is configured to answer your questions"}</h2>
                   </div>
                 </div>
