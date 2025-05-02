@@ -41,10 +41,10 @@ class _UiSettings(BaseSettings):
         env_ignore_empty=True
     )
 
-    title: str = "Contoso"
-    logo: Optional[str] = None
-    chat_logo: Optional[str] = None
-    chat_title: str = "Start chatting"
+    title: str = "DFA Knowledge Base AI Assistant"
+    logo: Optional[str] = ""
+    chat_logo: Optional[str] = ""
+    chat_title: str = "Start chatting with DFA Knowledge Base AI Assistant"
     chat_description: str = "This chatbot is configured to answer your questions"
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
