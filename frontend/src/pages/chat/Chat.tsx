@@ -749,14 +749,24 @@ const Chat = () => {
   }
 
   const parseCitationFromMessage = (message: ChatMessage) => {
+    console.log('[CITATION_DEBUG] Processing message:', message?.id, 'Role:', message?.role)
+    
     if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
+      console.log('[CITATION_DEBUG] Found tool message with string content')
       try {
         const toolMessage = JSON.parse(message.content) as ToolMessageContent
+        console.log('[CITATION_DEBUG] Parsed tool message:', toolMessage)
+        console.log('[CITATION_DEBUG] Citations found:', toolMessage.citations?.length || 0)
+        if (toolMessage.citations?.length > 0) {
+          console.log('[CITATION_DEBUG] First citation:', JSON.stringify(toolMessage.citations[0]))
+        }
         return toolMessage.citations
-      } catch {
+      } catch (error) {
+        console.error('[CITATION_DEBUG] Error parsing tool message content:', error)
         return []
       }
     }
+    console.log('[CITATION_DEBUG] Message not eligible for citation parsing')
     return []
   }
 
