@@ -101,6 +101,7 @@ frontend_settings = {
         "chat_description": app_settings.ui.chat_description,
         "show_share_button": app_settings.ui.show_share_button,
         "show_chat_history_button": app_settings.ui.show_chat_history_button,
+        "article_url_prefix": app_settings.ui.article_url_prefix,
     },
     "sanitize_answer": app_settings.base_settings.sanitize_answer,
     "oyd_enabled": app_settings.base_settings.datasource_type,
