@@ -1031,13 +1031,13 @@ const Chat = () => {
                 {activeCitation.title}
               </h5>
               <div tabIndex={0}>
-                {/* Process citation content to prefix relative URLs with article_url_prefix */}
+                {/* Process citation content to extract article ID and create proper links */}
                 <ReactMarkdown
                   linkTarget="_blank"
                   className={styles.citationPanelContent}
                   children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags }).replace(
-                    /href="\/articles-scope/g, 
-                    `href="${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}/articles-scope`
+                    /href="\/articles-scope\?articleId=(\d+)"/g, 
+                    (match, articleId) => `href="${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${articleId}"`
                   )}
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
