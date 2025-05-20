@@ -49,7 +49,7 @@ class _UiSettings(BaseSettings):
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
     show_chat_history_button: bool = True
-    article_url_prefix: str = "http://localhost:4200/#/articles/"
+    article_url_prefix: str = ""
 
 
 class _ChatHistorySettings(BaseSettings):
