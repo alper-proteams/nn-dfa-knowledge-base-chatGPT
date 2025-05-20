@@ -749,7 +749,7 @@ const Chat = () => {
 
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
-      const articleUrlPrefix = appStateContext?.state.frontendSettings?.ui?.article_url_prefix || 'http://localhost:4200/#/articles/'
+      const articleUrlPrefix = appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''
       const citationUrl = `${articleUrlPrefix}${citation.url}`
       window.open(citationUrl, '_blank')
     }
@@ -1024,7 +1024,7 @@ const Chat = () => {
                 tabIndex={0}
                 title={
                   activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? `${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || 'http://localhost:4200/#/articles/'}${activeCitation.url}`
+                    ? `${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${activeCitation.url}`
                     : activeCitation.title ?? ''
                 }
                 onClick={() => onViewSource(activeCitation)}>
