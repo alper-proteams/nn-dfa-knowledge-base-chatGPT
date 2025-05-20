@@ -1031,10 +1031,14 @@ const Chat = () => {
                 {activeCitation.title}
               </h5>
               <div tabIndex={0}>
+                {/* Process citation content to prefix relative URLs with article_url_prefix */}
                 <ReactMarkdown
                   linkTarget="_blank"
                   className={styles.citationPanelContent}
-                  children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags })}
+                  children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags }).replace(
+                    /href="\/articles-scope/g, 
+                    `href="${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}/articles-scope`
+                  )}
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
                 />
