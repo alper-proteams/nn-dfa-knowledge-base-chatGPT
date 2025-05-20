@@ -1,7 +1,6 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { CommandBarButton, Dialog, DialogType, IconButton, Stack } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
-import { ARTICLE_URL_PREFIX } from '../../constants/urlConstants'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -750,7 +749,8 @@ const Chat = () => {
 
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
-      const citationUrl = `${ARTICLE_URL_PREFIX}${citation.url}`
+      const articleUrlPrefix = appStateContext?.state.frontendSettings?.ui?.article_url_prefix || 'http://localhost:4200/#/articles/'
+      const citationUrl = `${articleUrlPrefix}${citation.url}`
       window.open(citationUrl, '_blank')
     }
   }
@@ -1024,7 +1024,7 @@ const Chat = () => {
                 tabIndex={0}
                 title={
                   activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? `${ARTICLE_URL_PREFIX}${activeCitation.url}`
+                    ? `${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || 'http://localhost:4200/#/articles/'}${activeCitation.url}`
                     : activeCitation.title ?? ''
                 }
                 onClick={() => onViewSource(activeCitation)}>
