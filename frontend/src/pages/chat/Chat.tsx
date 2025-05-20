@@ -747,9 +747,11 @@ const Chat = () => {
     setIsIntentsPanelOpen(true)
   }
 
+  const ARTICLE_URL_PREFIX = 'http://localhost:4200/#/articles/'
+  
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
-      const citationUrl = `http://localhost:4200/#/articles/${citation.url}`
+      const citationUrl = `${ARTICLE_URL_PREFIX}${citation.url}`
       window.open(citationUrl, '_blank')
     }
   }
@@ -1023,7 +1025,7 @@ const Chat = () => {
                 tabIndex={0}
                 title={
                   activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? `http://localhost:4200/#/articles/${activeCitation.url}`
+                    ? `${ARTICLE_URL_PREFIX}${activeCitation.url}`
                     : activeCitation.title ?? ''
                 }
                 onClick={() => onViewSource(activeCitation)}>
