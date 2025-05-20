@@ -1,6 +1,7 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { CommandBarButton, Dialog, DialogType, IconButton, Stack } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
+import { ARTICLE_URL_PREFIX } from '../../constants/urlConstants'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -747,8 +748,6 @@ const Chat = () => {
     setIsIntentsPanelOpen(true)
   }
 
-  const ARTICLE_URL_PREFIX = 'http://localhost:4200/#/articles/'
-  
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
       const citationUrl = `${ARTICLE_URL_PREFIX}${citation.url}`
