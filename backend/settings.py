@@ -44,7 +44,6 @@ class _UiSettings(BaseSettings):
     title: str = "DFA Knowledge Base AI Assistant"
     logo: Optional[str] = ""
     chat_logo: Optional[str] = ""
-    chat_title: str = "Start chatting with DFA Knowledge Base AI Assistant"
     chat_description: str = "This chatbot is configured to answer your questions"
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
