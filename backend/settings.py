@@ -42,6 +42,7 @@ class _UiSettings(BaseSettings):
     )
 
     title: str = "DFA Knowledge Base AI Assistant"
+    chat_title: str = "Novo Nordisk\nDFA Knowledge Base AI Assistant"
     logo: Optional[str] = ""
     chat_logo: Optional[str] = ""
     chat_description: str = "This chatbot is configured to answer your questions"

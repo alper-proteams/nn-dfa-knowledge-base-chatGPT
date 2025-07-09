@@ -841,9 +841,18 @@ const Chat = () => {
                   <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
                 </div>
                 <h1 className={styles.chatEmptyStateTitle}>
-                  Novo Nordisk
-                  <br />
-                  DFA Knowledge Base AI Assistant
+                  {ui?.chat_title?.split('\n').map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < ui.chat_title.split('\n').length - 1 && <br />}
+                    </span>
+                  )) || (
+                    <>
+                      Novo Nordisk
+                      <br />
+                      DFA Knowledge Base AI Assistant
+                    </>
+                  )}
                 </h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>
                   Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer
