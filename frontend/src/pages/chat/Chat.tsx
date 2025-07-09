@@ -846,35 +846,18 @@ const Chat = () => {
                       {line}
                       {index < ui.chat_title.split('\n').length - 1 && <br />}
                     </span>
-                  )) || (
-                    <>
-                      Novo Nordisk
-                      <br />
-                      DFA Knowledge Base AI Assistant
-                    </>
-                  )}
+                  ))}
                 </h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>
-                  {ui?.chat_description_1 || ui?.chat_description_2 || ui?.chat_description_3 ? (
-                    <>
-                      {ui.chat_description_1 && <span>{ui.chat_description_1}</span>}
-                      {ui.chat_description_1 && ui.chat_description_2 && <br />}
-                      {ui.chat_description_1 && ui.chat_description_2 && <br />}
-                      {ui.chat_description_2 && <span>{ui.chat_description_2}</span>}
-                      {ui.chat_description_2 && ui.chat_description_3 && <br />}
-                      {ui.chat_description_2 && ui.chat_description_3 && <br />}
-                      {ui.chat_description_3 && <span>{ui.chat_description_3}</span>}
-                    </>
-                  ) : (
-                    <>
-                      Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer
-                      questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the
-                      documentation.
-                      <br />
-                      <br />
-                      For additional support, please reach out to YJLH .
-                    </>
-                  )}
+                  <>
+                    {ui?.chat_description_1 && <span>{ui.chat_description_1}</span>}
+                    {ui?.chat_description_1 && ui?.chat_description_2 && <br />}
+                    {ui?.chat_description_1 && ui?.chat_description_2 && <br />}
+                    {ui?.chat_description_2 && <span>{ui.chat_description_2}</span>}
+                    {ui?.chat_description_2 && ui?.chat_description_3 && <br />}
+                    {ui?.chat_description_2 && ui?.chat_description_3 && <br />}
+                    {ui?.chat_description_3 && <span>{ui.chat_description_3}</span>}
+                  </>
                 </h2>
               </Stack>
             ) : (
