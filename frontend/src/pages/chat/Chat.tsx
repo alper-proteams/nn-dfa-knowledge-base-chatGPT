@@ -855,12 +855,21 @@ const Chat = () => {
                   )}
                 </h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>
-                  Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer
-                  questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the
-                  documentation.
-                  <br />
-                  <br />
-                  For additional support, please reach out to YJLH .
+                  {ui?.chat_description?.split('\n').map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      {index < ui.chat_description.split('\n').length - 1 && <br />}
+                    </span>
+                  )) || (
+                    <>
+                      Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer
+                      questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the
+                      documentation.
+                      <br />
+                      <br />
+                      For additional support, please reach out to YJLH .
+                    </>
+                  )}
                 </h2>
               </Stack>
             ) : (

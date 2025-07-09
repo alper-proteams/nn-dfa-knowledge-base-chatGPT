@@ -45,7 +45,7 @@ class _UiSettings(BaseSettings):
     chat_title: str = "Novo Nordisk\nDFA Knowledge Base AI Assistant"
     logo: Optional[str] = ""
     chat_logo: Optional[str] = ""
-    chat_description: str = "This chatbot is configured to answer your questions"
+    chat_description: str = "Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation.\n\nFor additional support, please reach out to YJLH ."
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
     show_chat_history_button: bool = True
