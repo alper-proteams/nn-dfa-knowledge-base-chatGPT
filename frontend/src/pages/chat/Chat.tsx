@@ -852,12 +852,12 @@ const Chat = () => {
                   {ui?.chat_description}
                 </h2>
                 {ui?.chat_description_details_1 && (
-                  <h3 className={styles.chatEmptyStateSubtitle} style={{ marginTop: '8px', marginBottom: '4px' }}>
+                  <h3 className={styles.chatDescriptionDetails}>
                     {ui.chat_description_details_1}
                   </h3>
                 )}
                 {ui?.chat_description_details_2 && (
-                  <h3 className={styles.chatEmptyStateSubtitle} style={{ marginTop: '4px', marginBottom: '4px' }}>
+                  <h3 className={styles.chatDescriptionDetailsSecondary}>
                     {ui.chat_description_details_2}
                   </h3>
                 )}

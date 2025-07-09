@@ -89,6 +89,36 @@
   width: 100%;
 }
 
+.chatDescriptionDetails {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  align-items: flex-end;
+  text-align: center;
+  letter-spacing: -0.01em;
+  color: var(--granite-grey);
+  max-width: 800px;
+  width: 100%;
+}
+
+.chatDescriptionDetailsSecondary {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 150%;
+  align-items: flex-end;
+  text-align: center;
+  letter-spacing: -0.01em;
+  color: var(--granite-grey);
+  max-width: 800px;
+  width: 100%;
+}
+
 .chatIcon {
   height: 300px;
   width: auto;
