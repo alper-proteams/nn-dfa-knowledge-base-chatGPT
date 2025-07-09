@@ -41,14 +41,14 @@ class _UiSettings(BaseSettings):
         env_ignore_empty=True
     )
 
-    title: str = "DFA Knowledge Base AI Assistant"
-    chat_title: str = "Novo Nordisk\nDFA Knowledge Base AI Assistant"
+    title: str =  ""
+    chat_title: str =  ""
     logo: Optional[str] = ""
     chat_logo: Optional[str] = ""
-    chat_description: str = "Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation.\n\nFor additional support, please reach out to YJLH ."
-    chat_description_1: str = "Welcome to DFA Knowledge Base AI Assistant. This AI is trained to help you find information and answer questions about articles in the DFA Knowledge Base. Feel free to ask anything related to the documentation."
+    chat_description: str = ""
+    chat_description_1: str = ""
     chat_description_2: str = ""
-    chat_description_3: str = "For additional support, please reach out to YJLH ."
+    chat_description_3: str =  ""
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
     show_chat_history_button: bool = True
