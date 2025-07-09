@@ -127,9 +127,6 @@ export type UI = {
   title: string
   chat_title: string
   chat_description: string
-  chat_description_1: string
-  chat_description_2: string
-  chat_description_3: string
   chat_description_details_1: string
   logo?: string
   chat_logo?: string

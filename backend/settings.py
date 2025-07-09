@@ -46,9 +46,6 @@ class _UiSettings(BaseSettings):
     logo: Optional[str] = ""
     chat_logo: Optional[str] = ""
     chat_description: str = ""
-    chat_description_1: str = ""
-    chat_description_2: str = ""
-    chat_description_3: str =  ""
     chat_description_details_1: str = ""
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
