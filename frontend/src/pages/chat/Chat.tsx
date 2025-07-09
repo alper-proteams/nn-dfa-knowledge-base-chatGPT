@@ -856,6 +856,11 @@ const Chat = () => {
                     {ui.chat_description_details_1}
                   </h3>
                 )}
+                {ui?.chat_description_details_2 && (
+                  <h3 className={styles.chatEmptyStateSubtitle}>
+                    {ui.chat_description_details_2}
+                  </h3>
+                )}
               </Stack>
             ) : (
               <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">

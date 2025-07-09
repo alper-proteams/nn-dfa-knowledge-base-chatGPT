@@ -128,6 +128,7 @@ export type UI = {
   chat_title: string
   chat_description: string
   chat_description_details_1: string
+  chat_description_details_2: string
   logo?: string
   chat_logo?: string
   show_share_button?: boolean

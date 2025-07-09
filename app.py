@@ -100,6 +100,7 @@ frontend_settings = {
         "chat_title": app_settings.ui.chat_title,
         "chat_description": app_settings.ui.chat_description,
         "chat_description_details_1": app_settings.ui.chat_description_details_1,
+        "chat_description_details_2": app_settings.ui.chat_description_details_2,
         "show_share_button": app_settings.ui.show_share_button,
         "show_chat_history_button": app_settings.ui.show_chat_history_button,
         "article_url_prefix": app_settings.ui.article_url_prefix,
