@@ -849,7 +849,6 @@ const Chat = () => {
                   ))}
                 </h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>
-                  <>
                     {ui?.chat_description_1 && <span>{ui.chat_description_1}</span>}
                     {ui?.chat_description_1 && ui?.chat_description_2 && <br />}
                     {ui?.chat_description_1 && ui?.chat_description_2 && <br />}
@@ -857,7 +856,6 @@ const Chat = () => {
                     {ui?.chat_description_2 && ui?.chat_description_3 && <br />}
                     {ui?.chat_description_2 && ui?.chat_description_3 && <br />}
                     {ui?.chat_description_3 && <span>{ui.chat_description_3}</span>}
-                  </>
                 </h2>
               </Stack>
             ) : (
