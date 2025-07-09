@@ -49,6 +49,7 @@ class _UiSettings(BaseSettings):
     chat_description_1: str = ""
     chat_description_2: str = ""
     chat_description_3: str =  ""
+    chat_description_details_1: str = ""
     favicon: str = "/favicon.ico"
     show_share_button: bool = True
     show_chat_history_button: bool = True
