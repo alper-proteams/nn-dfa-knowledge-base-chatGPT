@@ -39,6 +39,7 @@ import { QuestionInput } from '../../components/QuestionInput'
 import { ChatHistoryPanel } from '../../components/ChatHistory/ChatHistoryPanel'
 import { AppStateContext } from '../../state/AppProvider'
 import { useBoolean } from '@fluentui/react-hooks'
+import NextGenSap from '../../assets/next_gen_sap.png'
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -805,6 +806,22 @@ const Chat = () => {
     )
   }
 
+  const renderTextWithLink = (text: string) => {
+    const parts = text.split('ServiceNow')
+    if (parts.length === 2) {
+      return (
+        <>
+          {parts[0]}
+          <a href="https://novonordisk.service-now.com/it" target="_blank" rel="noopener noreferrer">
+            ServiceNow
+          </a>
+          {parts[1]}
+        </>
+      )
+    }
+    return text
+  }
+
   return (
     <div className={styles.container} role="main">
       {showAuthMessage ? (
@@ -837,9 +854,6 @@ const Chat = () => {
           <div className={styles.chatContainer}>
             {!messages || messages.length < 1 ? (
               <Stack className={styles.chatEmptyState}>
-                <div className={styles.chatIcon}>
-                  <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
-                </div>
                 <h1 className={styles.chatEmptyStateTitle}>
                   {ui?.chat_title?.split('\n').map((line, index) => (
                     <span key={index}>
@@ -848,19 +862,29 @@ const Chat = () => {
                     </span>
                   ))}
                 </h1>
-                <h2 className={styles.chatEmptyStateSubtitle}>
-                  {ui?.chat_description}
-                </h2>
-                {ui?.chat_description_details_1 && (
-                  <h3 className={styles.chatDescriptionDetails}>
-                    {ui.chat_description_details_1}
-                  </h3>
-                )}
-                {ui?.chat_description_details_2 && (
-                  <h3 className={styles.chatDescriptionDetailsSecondary}>
-                    {ui.chat_description_details_2}
-                  </h3>
-                )}
+                <div className={styles.welcomeContainer}>
+                  <div className={styles.chatIcon}>
+                    <img src={logo} style={{ width: '100%', height: '100%' }} aria-hidden="true" />
+                  </div>
+                  <div className={styles.welcomeText}>
+                    {ui?.chat_description?.split('\n').map((line, index) => (
+                      <p key={index} className={styles.chatEmptyStateSubtitle}>
+                        {line}
+                      </p>
+                    ))}
+                    {ui?.chat_description_details_1 && (
+                      <p className={styles.chatDescriptionDetails}>
+                        {ui.chat_description_details_1}
+                      </p>
+                    )}
+                    {ui?.chat_description_details_2 && (
+                      <p className={styles.chatDescriptionDetailsSecondary}>
+                        {renderTextWithLink(ui.chat_description_details_2)}
+                      </p>
+                    )}
+                    <img src={NextGenSap} alt="Next Gen SAP" className={styles.nextGenSapImage} />
+                  </div>
+                </div>
               </Stack>
             ) : (
               <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">
