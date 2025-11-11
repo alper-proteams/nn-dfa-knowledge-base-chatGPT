@@ -1034,17 +1034,21 @@ const Chat = () => {
               </Stack.Item>
               <Stack.Item grow className={styles.inputGroup}>
                 <Stack className={styles.inputColumn} tokens={{ childrenGap: 8 }}>
-                  <Dropdown
-                    ariaLabel="Select chat category"
-                    placeholder="Category"
-                    selectedKey={selectedCategory.key}
-                    onChange={(_, option) => option && setSelectedCategory(option)}
-                    options={categoryOptions}
-                    styles={{
-                      root: { width: '100%' },
-                      dropdown: { minHeight: 36 }
-                    }}
-                  />
+                  <div className={styles.categoryDropdownContainer}>
+                    <Dropdown
+                      ariaLabel="Select chat category"
+                      placeholder="Category"
+                      selectedKey={selectedCategory.key}
+                      onChange={(_, option) => option && setSelectedCategory(option)}
+                      options={categoryOptions}
+                      className={styles.categoryDropdownControl}
+                      styles={{
+                        root: { width: '100%' },
+                        dropdown: { minHeight: 36 }
+                      }}
+                    />
+                    <div className={styles.categoryDropdownBottomBorder} />
+                  </div>
                   <QuestionInput
                     clearOnSend
                     placeholder="Type a new question..."
