@@ -115,6 +115,68 @@ MS_DEFENDER_ENABLED = os.environ.get("MS_DEFENDER_ENABLED", "true").lower() == "
 azure_openai_tools = []
 azure_openai_available_tools = []
 
+
+@bp.route("/categories", methods=["GET"])
+async def fetch_categories():
+    service_settings = app_settings.category_service
+    if not service_settings:
+        logging.warning("Category service is not configured; returning empty category list.")
+        return jsonify({"data": []}), 200
+
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"bearer {service_settings.api_token}"
+    }
+    params = {"sort": "order:asc"}
+
+    logging.debug("Requesting categories from %s", service_settings.categories_endpoint)
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(
+                service_settings.categories_endpoint,
+                headers=headers,
+                params=params
+            )
+    except Exception as exc:
+        logging.exception("Failed to call category service: %s", exc)
+        return jsonify({"error": "failed_to_call_category_service"}), 502
+
+    logging.debug("Category service responded with status %s", response.status_code)
+
+    if not response.is_success:
+        logging.error(
+            "Category service returned non-success status %s: %s",
+            response.status_code,
+            response.text
+        )
+        return jsonify({"error": "category_service_error"}), 502
+
+    payload = response.json()
+    logging.debug("Category service payload: %s", payload)
+    raw_categories = payload.get("data", [])
+    categories = []
+    for item in raw_categories:
+        attributes = item.get("attributes")
+        name = None
+        order = None
+        if isinstance(attributes, dict):
+            name = attributes.get("name")
+            order = attributes.get("order")
+        name = name if name is not None else item.get("name")
+        order = order if order is not None else item.get("order")
+
+        categories.append({
+            "id": item.get("id"),
+            "name": name,
+            "order": order
+        })
+
+    categories.sort(key=lambda c: (c.get("order") is None, c.get("order", 0)))
+    logging.debug("Returning %s categories to client", len(categories))
+    logging.debug("Flattened categories payload: %s", categories)
+
+    return jsonify({"data": categories})
+
 # Initialize Azure OpenAI Client
 async def init_openai_client():
     azure_openai_client = None
@@ -241,12 +303,27 @@ async def init_cosmosdb_client():
 
 def prepare_model_args(request_body, request_headers):
     request_messages = request_body.get("messages", [])
+    selected_category = request_body.get("category")
+
+    def append_category_directive(base_message: str | None) -> str:
+        base_message = (base_message or "").strip()
+        category_directive_template = app_settings.azure_openai.system_message_category
+        if selected_category and isinstance(selected_category, str) and category_directive_template:
+            directive = category_directive_template.replace("{selected_category}", selected_category).replace("{selected_Category}", selected_category)
+            if base_message and not base_message.endswith(" "):
+                base_message = f"{base_message} "
+            base_message = f"{base_message}{directive}".strip()
+        return base_message
+
+    def build_system_message():
+        return append_category_directive(app_settings.azure_openai.system_message)
+
     messages = []
     if not app_settings.datasource:
         messages = [
             {
                 "role": "system",
-                "content": app_settings.azure_openai.system_message
+                "content": build_system_message()
             }
         ]
 
@@ -299,11 +376,15 @@ def prepare_model_args(request_body, request_headers):
                 model_args["tools"] = azure_openai_tools
 
             if app_settings.datasource:
+                data_source_configuration = app_settings.datasource.construct_payload_configuration(
+                    request=request
+                )
+                parameters = data_source_configuration.get("parameters")
+                if parameters is not None:
+                    parameters["role_information"] = append_category_directive(parameters.get("role_information"))
                 model_args["extra_body"] = {
                     "data_sources": [
-                        app_settings.datasource.construct_payload_configuration(
-                            request=request
-                        )
+                        data_source_configuration
                     ]
                 }
 
@@ -862,6 +943,7 @@ async def get_conversation():
             "content": msg["content"],
             "createdAt": msg["createdAt"],
             "feedback": msg.get("feedback"),
+            "category": msg.get("category"),
         }
         for msg in conversation_messages
     ]

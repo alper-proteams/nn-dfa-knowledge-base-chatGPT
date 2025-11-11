@@ -1,10 +1,9 @@
 .questionInputContainer {
-  height: 120px;
-  position: absolute;
-  left: 6.5%;
-  right: 0%;
-  top: 0%;
-  bottom: 0%;
+  min-height: 120px;
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
   background: var(--snow-white);
   box-shadow:
     0px 8px 16px rgba(0, 25, 101, 0.14),
@@ -55,12 +54,6 @@
   cursor: pointer;
   width: 27px;
   height: 30px;
-}
-
-@media (max-width: 480px) {
-  .questionInputContainer {
-    left: 16.5%;
-  }
 }
 
 .fileInputContainer {

@@ -29,6 +29,7 @@ import {
   ErrorMessage,
   ExecResults,
   getUserInfo,
+  fetchCategories,
   historyClear,
   historyGenerate,
   historyUpdate,
@@ -45,6 +46,8 @@ const enum messageStatus {
   Processing = 'Processing',
   Done = 'Done'
 }
+
+const ALL_CATEGORY_OPTION: IDropdownOption = { key: 'all', text: 'All' }
 
 const Chat = () => {
   const appStateContext = useContext(AppStateContext)
@@ -67,13 +70,8 @@ const Chat = () => {
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
-  const CATEGORY_OPTIONS: IDropdownOption[] = [
-    { key: 'all', text: 'All' },
-    { key: 'sop', text: 'SOPs' },
-    { key: 'policy', text: 'Policies' },
-    { key: 'howto', text: 'How-to' }
-  ]
-  const [selectedCategory, setSelectedCategory] = useState<IDropdownOption>(CATEGORY_OPTIONS[0])
+  const [categoryOptions, setCategoryOptions] = useState<IDropdownOption[]>([ALL_CATEGORY_OPTION])
+  const [selectedCategory, setSelectedCategory] = useState<IDropdownOption>(ALL_CATEGORY_OPTION)
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -133,6 +131,28 @@ const Chat = () => {
   useEffect(() => {
     setIsLoading(appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading)
   }, [appStateContext?.state.chatHistoryLoadingState])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categories = await fetchCategories()
+        console.log('[CATEGORY_DEBUG] Categories response from server:', categories)
+        const mappedOptions: IDropdownOption[] = categories
+          .filter(category => !!category?.name)
+          .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+          .map(category => ({
+            key: category.id ? category.id.toString() : category.name,
+            text: category.name
+          }))
+        setCategoryOptions([ALL_CATEGORY_OPTION, ...mappedOptions])
+        console.log('[CATEGORY_DEBUG] Dropdown options after merge:', [ALL_CATEGORY_OPTION, ...mappedOptions])
+      } catch (error) {
+        console.error('Failed to load categories.', error)
+      }
+    }
+
+    loadCategories()
+  }, [])
 
   const getUserInfoList = async () => {
     if (!AUTH_ENABLED) {
@@ -200,22 +220,7 @@ const Chat = () => {
     }
   }
 
-  function withCategoryPrefix(q: ChatMessage['content']): ChatMessage['content'] {
-    const useCat = selectedCategory?.key !== 'all' ? selectedCategory.text : ''
-    if (!useCat) return q
-
-    const prefix = `[category:${useCat}] `
-
-    if (typeof q === 'string') return `${prefix}${q}`
-
-    if (Array.isArray(q) && q[0]?.type === 'text') {
-      const textPart = q[0] as { type: string; text?: string }
-      const cloned = [...q]
-      cloned[0] = { ...textPart, text: `${prefix}${textPart.text ?? ''}` }
-      return cloned as ChatMessage['content']
-    }
-    return q
-  }
+  const getSelectedCategoryText = () => (selectedCategory?.key !== 'all' ? selectedCategory.text ?? null : null)
 
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
@@ -235,11 +240,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
+    const activeCategory = getSelectedCategoryText()
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      category: activeCategory ?? null
     }
 
     let conversation: Conversation | null | undefined
@@ -267,7 +274,8 @@ const Chat = () => {
     setMessages(conversation.messages)
 
     const request: ConversationRequest = {
-      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+      category: activeCategory ?? undefined
     }
 
     let result = {} as ChatResponse
@@ -370,11 +378,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
+    const activeCategory = getSelectedCategoryText()
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      category: activeCategory ?? null
     }
 
     let request: ConversationRequest
@@ -390,12 +400,14 @@ const Chat = () => {
       } else {
         conversation.messages.push(userMessage)
         request = {
-          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+          category: activeCategory ?? undefined
         }
       }
     } else {
       request = {
-        messages: [userMessage].filter(answer => answer.role !== ERROR)
+        messages: [userMessage].filter(answer => answer.role !== ERROR),
+        category: activeCategory ?? undefined
       }
       setMessages(request.messages)
     }
@@ -884,19 +896,30 @@ const Chat = () => {
                   <>
                     {answer.role === 'user' ? (
                       <div className={styles.chatMessageUser} tabIndex={0}>
-                        <div className={styles.chatMessageUserMessage}>
-                          {typeof answer.content === 'string' && answer.content ? (
-                            answer.content
-                          ) : Array.isArray(answer.content) ? (
-                            <>
-                              {answer.content[0].text}
-                              <img
-                                className={styles.uploadedImageChat}
-                                src={answer.content[1].image_url.url}
-                                alt="Uploaded Preview"
-                              />
-                            </>
-                          ) : null}
+                        <div className={styles.chatMessageUserContent}>
+                          <div className={styles.chatMessageUserMessage}>
+                            <div className={styles.chatMessageUserText}>
+                              {typeof answer.content === 'string' && answer.content ? (
+                                answer.content
+                              ) : Array.isArray(answer.content) ? (
+                                <>
+                                  {answer.content[0].text}
+                                  <img
+                                    className={styles.uploadedImageChat}
+                                    src={answer.content[1].image_url.url}
+                                    alt="Uploaded Preview"
+                                  />
+                                </>
+                              ) : null}
+                            </div>
+                            {answer.category && (
+                              <span
+                                className={styles.chatMessageUserCategory}
+                                aria-label={`Selected category ${answer.category}`}>
+                                Category: {answer.category}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ) : answer.role === 'assistant' ? (
@@ -948,7 +971,7 @@ const Chat = () => {
               </div>
             )}
 
-            <Stack horizontal wrap className={styles.chatInput}>
+            <Stack horizontal wrap className={styles.chatInput} verticalAlign="start" tokens={{ childrenGap: 16 }}>
               {isLoading && messages.length > 0 && (
                 <Stack
                   horizontal
@@ -964,7 +987,7 @@ const Chat = () => {
                   </span>
                 </Stack>
               )}
-              <Stack>
+              <Stack.Item className={styles.iconColumn} align="center">
                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && (
                   <CommandBarButton
                     role="button"
@@ -1008,33 +1031,36 @@ const Chat = () => {
                   onDismiss={handleErrorDialogClose}
                   dialogContentProps={errorDialogContentProps}
                   modalProps={modalProps}></Dialog>
-              </Stack>
-              <Dropdown
-                ariaLabel="Select chat category"
-                label="Category"
-                selectedKey={selectedCategory.key}
-                onChange={(_, option) => option && setSelectedCategory(option)}
-                options={CATEGORY_OPTIONS}
-                styles={{
-                  root: { minWidth: 220, marginRight: 8 },
-                  label: { fontWeight: 600, marginBottom: 2 }
-                }}
-              />
-              <QuestionInput
-                clearOnSend
-                placeholder="Type a new question..."
-                disabled={isLoading}
-                onSend={(question, id) => {
-                  const q = withCategoryPrefix(question)
-                  appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                    ? makeApiRequestWithCosmosDB(q, id)
-                    : makeApiRequestWithoutCosmosDB(q, id)
-                }}
-                conversationId={
-                  appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
-                }
-                initialQuestion={initialQuestion || undefined}
-              />
+              </Stack.Item>
+              <Stack.Item grow className={styles.inputGroup}>
+                <Stack className={styles.inputColumn} tokens={{ childrenGap: 8 }}>
+                  <Dropdown
+                    ariaLabel="Select chat category"
+                    placeholder="Category"
+                    selectedKey={selectedCategory.key}
+                    onChange={(_, option) => option && setSelectedCategory(option)}
+                    options={categoryOptions}
+                    styles={{
+                      root: { width: '100%' },
+                      dropdown: { minHeight: 36 }
+                    }}
+                  />
+                  <QuestionInput
+                    clearOnSend
+                    placeholder="Type a new question..."
+                    disabled={isLoading}
+                    onSend={(question, id) => {
+                      appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                        ? makeApiRequestWithCosmosDB(question, id)
+                        : makeApiRequestWithoutCosmosDB(question, id)
+                    }}
+                    conversationId={
+                      appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
+                    }
+                    initialQuestion={initialQuestion || undefined}
+                  />
+                </Stack>
+              </Stack.Item>
             </Stack>
           </div>
           {/* Citation Panel */}

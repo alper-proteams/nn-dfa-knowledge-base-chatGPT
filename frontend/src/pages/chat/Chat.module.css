@@ -179,9 +179,18 @@
   margin-bottom: 12px;
 }
 
+.chatMessageUserContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .chatMessageUserMessage {
   position: relative;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 20px;
   background: var(--light-blue);
   border-radius: 8px;
@@ -197,7 +206,21 @@
   flex-grow: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-width: 80%;
+}
+
+.chatMessageUserText {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--snow-white);
+}
+
+.chatMessageUserCategory {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: right;
 }
 
 .chatMessageGpt {
@@ -245,55 +268,34 @@
   margin-top: 8px;
 }
 
-.clearChatBroom {
-  box-sizing: border-box;
+.iconColumn {
+  width: 48px;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
   align-items: center;
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  left: 7px;
-  top: 13px;
-  color: var(--snow-white);
-  background-color: var(--true-blue);
-  border-radius: 4px;
-  z-index: 1;
+  margin-top: 4px;
 }
 
-.clearChatBroomNoCosmos {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  left: 7px;
-  top: 66px;
-  color: var(--snow-white);
-  background-color: var(--true-blue);
-  border-radius: 4px;
-  z-index: 1;
+.inputGroup {
+  margin-left: 8px;
 }
 
+.inputColumn {
+  width: 100%;
+}
+
+.clearChatBroom,
+.clearChatBroomNoCosmos,
 .newChatIcon {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
   width: 40px;
   height: 40px;
-  left: 7px;
-  top: 66px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   color: var(--snow-white);
   background-color: var(--true-blue);
   border-radius: 4px;
-  z-index: 1;
 }
 
 .stopGeneratingContainer {
@@ -553,8 +555,7 @@ a {
 }
 
 @media (max-width: 640px) {
-  .chatInput :global(.ms-Dropdown) {
+  .inputColumn :global(.ms-Dropdown) {
     width: 100%;
-    margin: 0 0 8px 0;
   }
 }
