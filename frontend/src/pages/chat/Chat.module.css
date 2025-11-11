@@ -551,3 +551,10 @@ a {
     max-width: 100%;
   }
 }
+
+@media (max-width: 640px) {
+  .chatInput :global(.ms-Dropdown) {
+    width: 100%;
+    margin: 0 0 8px 0;
+  }
+}

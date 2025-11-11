@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CommandBarButton, Dialog, DialogType, IconButton, Stack } from '@fluentui/react'
+import { CommandBarButton, Dialog, DialogType, IconButton, Stack, Dropdown, IDropdownOption } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
 
 import ReactMarkdown from 'react-markdown'
@@ -67,6 +67,13 @@ const Chat = () => {
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
+  const CATEGORY_OPTIONS: IDropdownOption[] = [
+    { key: 'all', text: 'All' },
+    { key: 'sop', text: 'SOPs' },
+    { key: 'policy', text: 'Policies' },
+    { key: 'howto', text: 'How-to' }
+  ]
+  const [selectedCategory, setSelectedCategory] = useState<IDropdownOption>(CATEGORY_OPTIONS[0])
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -191,6 +198,23 @@ const Chat = () => {
         ? setMessages([...messages, assistantMessage])
         : setMessages([...messages, toolMessage, assistantMessage])
     }
+  }
+
+  function withCategoryPrefix(q: ChatMessage['content']): ChatMessage['content'] {
+    const useCat = selectedCategory?.key !== 'all' ? selectedCategory.text : ''
+    if (!useCat) return q
+
+    const prefix = `[category:${useCat}] `
+
+    if (typeof q === 'string') return `${prefix}${q}`
+
+    if (Array.isArray(q) && q[0]?.type === 'text') {
+      const textPart = q[0] as { type: string; text?: string }
+      const cloned = [...q]
+      cloned[0] = { ...textPart, text: `${prefix}${textPart.text ?? ''}` }
+      return cloned as ChatMessage['content']
+    }
+    return q
   }
 
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
@@ -924,7 +948,7 @@ const Chat = () => {
               </div>
             )}
 
-            <Stack horizontal className={styles.chatInput}>
+            <Stack horizontal wrap className={styles.chatInput}>
               {isLoading && messages.length > 0 && (
                 <Stack
                   horizontal
@@ -985,14 +1009,26 @@ const Chat = () => {
                   dialogContentProps={errorDialogContentProps}
                   modalProps={modalProps}></Dialog>
               </Stack>
+              <Dropdown
+                ariaLabel="Select chat category"
+                label="Category"
+                selectedKey={selectedCategory.key}
+                onChange={(_, option) => option && setSelectedCategory(option)}
+                options={CATEGORY_OPTIONS}
+                styles={{
+                  root: { minWidth: 220, marginRight: 8 },
+                  label: { fontWeight: 600, marginBottom: 2 }
+                }}
+              />
               <QuestionInput
                 clearOnSend
                 placeholder="Type a new question..."
                 disabled={isLoading}
                 onSend={(question, id) => {
+                  const q = withCategoryPrefix(question)
                   appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                    ? makeApiRequestWithCosmosDB(question, id)
-                    : makeApiRequestWithoutCosmosDB(question, id)
+                    ? makeApiRequestWithCosmosDB(q, id)
+                    : makeApiRequestWithoutCosmosDB(q, id)
                 }}
                 conversationId={
                   appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
