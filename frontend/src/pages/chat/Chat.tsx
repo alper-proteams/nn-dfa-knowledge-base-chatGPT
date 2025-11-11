@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CommandBarButton, Dialog, DialogType, IconButton, Stack, Dropdown, IDropdownOption } from '@fluentui/react'
+import { CommandBarButton, Dialog, DialogType, IconButton, Stack, IDropdownOption } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
 
 import ReactMarkdown from 'react-markdown'
@@ -1033,26 +1033,15 @@ const Chat = () => {
                   modalProps={modalProps}></Dialog>
               </Stack.Item>
               <Stack.Item grow className={styles.inputGroup}>
-                <Stack className={styles.inputColumn} tokens={{ childrenGap: 8 }}>
-                  <div className={styles.categoryDropdownContainer}>
-                    <Dropdown
-                      ariaLabel="Select chat category"
-                      placeholder="Category"
-                      selectedKey={selectedCategory.key}
-                      onChange={(_, option) => option && setSelectedCategory(option)}
-                      options={categoryOptions}
-                      className={styles.categoryDropdownControl}
-                      styles={{
-                        root: { width: '100%' },
-                        dropdown: { minHeight: 36 }
-                      }}
-                    />
-                    <div className={styles.categoryDropdownBottomBorder} />
-                  </div>
+                <Stack className={styles.inputColumn}>
                   <QuestionInput
                     clearOnSend
                     placeholder="Type a new question..."
                     disabled={isLoading}
+                    categoryOptions={categoryOptions}
+                    selectedCategoryKey={selectedCategory.key}
+                    onCategoryChange={option => setSelectedCategory(option)}
+                    categoryPlaceholder="Category"
                     onSend={(question, id) => {
                       appStateContext?.state.isCosmosDBAvailable?.cosmosDB
                         ? makeApiRequestWithCosmosDB(question, id)

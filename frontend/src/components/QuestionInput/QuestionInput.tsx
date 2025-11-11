@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useRef } from 'react'
-import { FontIcon, Stack, TextField } from '@fluentui/react'
+import { FontIcon, Stack, TextField, Dropdown, IDropdownOption } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
 
 import Send from '../../assets/Send.svg'
@@ -16,9 +16,24 @@ interface Props {
   clearOnSend?: boolean
   conversationId?: string
   initialQuestion?: string
+  categoryOptions?: IDropdownOption[]
+  selectedCategoryKey?: string | number
+  onCategoryChange?: (option: IDropdownOption) => void
+  categoryPlaceholder?: string
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId, initialQuestion }: Props) => {
+export const QuestionInput = ({
+  onSend,
+  disabled,
+  placeholder,
+  clearOnSend,
+  conversationId,
+  initialQuestion,
+  categoryOptions,
+  selectedCategoryKey,
+  onCategoryChange,
+  categoryPlaceholder
+}: Props) => {
   const [question, setQuestion] = useState<string>(initialQuestion || '')
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [autoSendTimer, setAutoSendTimer] = useState<number | null>(null);
@@ -157,11 +172,31 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
 
   const sendQuestionDisabled = disabled || !question.trim()
 
+  const showCategoryDropdown = !!categoryOptions?.length && !!onCategoryChange
+
   return (
-    <Stack horizontal className={styles.questionInputContainer}>
-      <TextField
-        className={styles.questionInputTextArea}
-        placeholder={placeholder}
+    <Stack className={styles.questionInputWrapper} tokens={{ childrenGap: 12 }}>
+      {showCategoryDropdown && (
+        <div className={styles.categoryDropdownContainer}>
+          <Dropdown
+            ariaLabel="Select chat category"
+            placeholder={categoryPlaceholder ?? 'Category'}
+            selectedKey={selectedCategoryKey}
+            onChange={(_, option) => option && onCategoryChange(option)}
+            options={categoryOptions ?? []}
+            className={styles.categoryDropdownControl}
+            styles={{
+              root: { width: '100%' },
+              dropdown: { minHeight: 36 }
+            }}
+          />
+          <div className={styles.categoryDropdownBottomBorder} />
+        </div>
+      )}
+      <Stack horizontal className={styles.questionInputContainer}>
+        <TextField
+          className={styles.questionInputTextArea}
+          placeholder={placeholder}
         multiline
         resizable={false}
         borderless
@@ -201,6 +236,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         )}
       </div>
       <div className={styles.questionInputBottomBorder} />
+      </Stack>
     </Stack>
   )
 }
