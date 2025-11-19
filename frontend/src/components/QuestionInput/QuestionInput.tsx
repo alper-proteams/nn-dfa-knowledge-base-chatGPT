@@ -175,67 +175,64 @@ export const QuestionInput = ({
   const showCategoryDropdown = !!categoryOptions?.length && !!onCategoryChange
 
   return (
-    <Stack className={styles.questionInputWrapper} tokens={{ childrenGap: 12 }}>
-      {showCategoryDropdown && (
-        <div className={styles.categoryDropdownContainer}>
-          <Dropdown
-            ariaLabel="Select chat category"
-            placeholder={categoryPlaceholder ?? 'Category'}
-            selectedKey={selectedCategoryKey}
-            onChange={(_, option) => option && onCategoryChange(option)}
-            options={categoryOptions ?? []}
-            className={styles.categoryDropdownControl}
-            styles={{
-              root: { width: '100%' },
-              dropdown: { minHeight: 36 }
-            }}
-          />
-          <div className={styles.categoryDropdownBottomBorder} />
-        </div>
-      )}
+    <Stack className={styles.questionInputWrapper}>
       <Stack horizontal className={styles.questionInputContainer}>
         <TextField
           className={styles.questionInputTextArea}
           placeholder={placeholder}
-        multiline
-        resizable={false}
-        borderless
-        value={question}
-        onChange={onQuestionChange}
-        onKeyDown={onEnterPress}
-      />
-      {!OYD_ENABLED && (
-        <div className={styles.fileInputContainer}>
-          <input
-            type="file"
-            id="fileInput"
-            onChange={(event) => handleImageUpload(event)}
-            accept="image/*"
-            className={styles.fileInput}
-          />
-          <label htmlFor="fileInput" className={styles.fileLabel} aria-label='Upload Image'>
-            <FontIcon
-              className={styles.fileIcon}
-              iconName={'PhotoCollection'}
-              aria-label='Upload Image'
+          multiline
+          resizable={false}
+          borderless
+          value={question}
+          onChange={onQuestionChange}
+          onKeyDown={onEnterPress}
+        />
+        {!OYD_ENABLED && (
+          <div className={styles.fileInputContainer}>
+            <input
+              type="file"
+              id="fileInput"
+              onChange={event => handleImageUpload(event)}
+              accept="image/*"
+              className={styles.fileInput}
             />
-          </label>
-        </div>)}
-      {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
-      <div
-        className={styles.questionInputSendButtonContainer}
-        role="button"
-        tabIndex={0}
-        aria-label="Ask question button"
-        onClick={sendQuestion}
-        onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? sendQuestion() : null)}>
-        {sendQuestionDisabled ? (
-          <SendRegular className={styles.questionInputSendButtonDisabled} />
-        ) : (
-          <img src={Send} className={styles.questionInputSendButton} alt="Send Button" />
+            <label htmlFor="fileInput" className={styles.fileLabel} aria-label="Upload Image">
+              <FontIcon className={styles.fileIcon} iconName={'PhotoCollection'} aria-label="Upload Image" />
+            </label>
+          </div>
         )}
-      </div>
-      <div className={styles.questionInputBottomBorder} />
+        {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
+        <div
+          className={styles.questionInputSendButtonContainer}
+          role="button"
+          tabIndex={0}
+          aria-label="Ask question button"
+          onClick={sendQuestion}
+          onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? sendQuestion() : null)}>
+          {sendQuestionDisabled ? (
+            <SendRegular className={styles.questionInputSendButtonDisabled} />
+          ) : (
+            <img src={Send} className={styles.questionInputSendButton} alt="Send Button" />
+          )}
+        </div>
+        {showCategoryDropdown && (
+          <div className={styles.categoryDropdownFloating}>
+            <Dropdown
+              ariaLabel="Select chat category"
+              placeholder={categoryPlaceholder ?? 'Category'}
+              selectedKey={selectedCategoryKey}
+              onChange={(_, option) => option && onCategoryChange(option)}
+              options={categoryOptions ?? []}
+              className={styles.categoryDropdownControl}
+              styles={{
+                root: { width: '100%' },
+                dropdown: { minHeight: 36 }
+              }}
+            />
+            <div className={styles.categoryDropdownBottomBorder} />
+          </div>
+        )}
+        <div className={styles.questionInputBottomBorder} />
       </Stack>
     </Stack>
   )

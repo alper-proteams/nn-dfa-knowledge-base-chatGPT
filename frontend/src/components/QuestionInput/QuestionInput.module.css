@@ -16,6 +16,7 @@
     0px 8px 16px rgba(0, 25, 101, 0.14),
     0px 0px 2px rgba(0, 25, 101, 0.12);
   border-radius: 8px;
+  padding: 0 24px 72px 24px;
 }
 
 .questionInputTextArea {
@@ -25,12 +26,26 @@
   margin-bottom: 10px;
   margin-left: 12px;
   margin-right: 12px;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.questionInputTextArea :global(.ms-TextField-fieldGroup) {
+  border: none;
+  background: transparent;
+}
+
+.questionInputTextArea :global(.ms-TextField-field) {
+  padding-right: 84px;
+  padding-bottom: 72px;
 }
 
 .questionInputSendButtonContainer {
   position: absolute;
   right: 24px;
   bottom: 20px;
+  z-index: 3;
 }
 
 .questionInputSendButton {
@@ -95,18 +110,22 @@
   margin-right: 70px;
 }
 
-.categoryDropdownContainer {
-  position: relative;
-  width: 100%;
-  padding: 4px 16px 16px;
+.categoryDropdownFloating {
+  position: absolute;
+  left: 24px;
+  bottom: 16px;
+  width: 240px;
+  padding: 4px 12px 12px;
   background: var(--snow-white);
   box-shadow:
     0px 8px 16px rgba(0, 25, 101, 0.14),
     0px 0px 2px rgba(0, 25, 101, 0.12);
   border-radius: 8px;
+  z-index: 1;
+  pointer-events: auto;
 }
 
-.categoryDropdownContainer:focus-within {
+.categoryDropdownFloating:focus-within {
   box-shadow:
     0px 8px 16px rgba(0, 25, 101, 0.24),
     0px 0px 2px rgba(0, 25, 101, 0.24);
@@ -151,4 +170,10 @@
   background: var(--true-blue);
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .categoryDropdownFloating {
+    width: calc(100% - 48px);
+  }
 }

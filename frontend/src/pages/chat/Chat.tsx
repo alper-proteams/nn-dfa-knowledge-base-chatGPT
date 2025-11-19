@@ -89,6 +89,52 @@ const Chat = () => {
 
   const [ASSISTANT, TOOL, ERROR] = ['assistant', 'tool', 'error']
   const NO_CONTENT_ERROR = 'No content in messages object.'
+  const articleUrlPrefix = (appStateContext?.state.frontendSettings?.ui?.article_url_prefix ?? '').trim()
+
+  const buildArticleUrlFromId = (articleId?: string | null) => {
+    if (!articleId || !articleUrlPrefix) {
+      return null
+    }
+    return `${articleUrlPrefix}${articleId}`
+  }
+
+  const resolveCitationUrl = (rawUrl?: string | null) => {
+    if (!rawUrl) {
+      return null
+    }
+
+    const trimmedUrl = rawUrl.trim()
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+      return trimmedUrl
+    }
+
+    const articleIdMatch = trimmedUrl.match(/articleId=([^&"'>]+)/i)
+    if (articleIdMatch) {
+      const resolvedArticleUrl = buildArticleUrlFromId(articleIdMatch[1])
+      if (resolvedArticleUrl) {
+        return resolvedArticleUrl
+      }
+    }
+
+    return trimmedUrl
+  }
+
+  const formatCitationContent = (content?: string | null) => {
+    if (!content) {
+      return ''
+    }
+
+    const sanitizedContent = DOMPurify.sanitize(content, { ALLOWED_TAGS: XSSAllowTags })
+    const hrefRegex = /href=(['"])(.*?)\1/g
+
+    return sanitizedContent.replace(hrefRegex, (match, quote, hrefValue) => {
+      const resolvedHref = resolveCitationUrl(hrefValue)
+      if (!resolvedHref) {
+        return match
+      }
+      return `href=${quote}${resolvedHref}${quote}`
+    })
+  }
 
   useEffect(() => {
     if (
@@ -785,9 +831,10 @@ const Chat = () => {
 
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
-      const articleUrlPrefix = appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''
-      const citationUrl = `${articleUrlPrefix}${citation.url}`
-      window.open(citationUrl, '_blank')
+      const citationUrl = resolveCitationUrl(citation.url)
+      if (citationUrl) {
+        window.open(citationUrl, '_blank')
+      }
     }
   }
 
@@ -1079,21 +1126,18 @@ const Chat = () => {
                 tabIndex={0}
                 title={
                   activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? `${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${activeCitation.url}`
+                    ? resolveCitationUrl(activeCitation.url) || activeCitation.title || ''
                     : activeCitation.title ?? ''
                 }
                 onClick={() => onViewSource(activeCitation)}>
                 {activeCitation.title}
               </h5>
               <div tabIndex={0}>
-                {/* Process citation content to extract article ID and create proper links */}
+                {/* Sanitize citation content and rewrite relative links to the configured base URL */}
                 <ReactMarkdown
                   linkTarget="_blank"
                   className={styles.citationPanelContent}
-                  children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags }).replace(
-                    /href="\/articles-scope\?articleId=(\d+)"/g, 
-                    (match, articleId) => `href="${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${articleId}"`
-                  )}
+                  children={formatCitationContent(activeCitation.content)}
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
                 />
