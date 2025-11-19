@@ -1,8 +1,17 @@
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type AnchorHTMLAttributes
+} from 'react'
 import { CommandBarButton, Dialog, DialogType, IconButton, Stack, IDropdownOption } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
 
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import uuid from 'react-uuid'
@@ -13,7 +22,7 @@ import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import styles from './Chat.module.css'
 import ChatLogo from '../../assets/ai_agent.png'
-import { XSSAllowTags } from '../../constants/sanatizeAllowables'
+import { XSSAllowTags, XSSAllowAttributes } from '../../constants/sanatizeAllowables'
 import { getQueryParam } from '../../utils/urlParams'
 
 import {
@@ -91,14 +100,15 @@ const Chat = () => {
   const NO_CONTENT_ERROR = 'No content in messages object.'
   const articleUrlPrefix = (appStateContext?.state.frontendSettings?.ui?.article_url_prefix ?? '').trim()
 
-  const buildArticleUrlFromId = (articleId?: string | null) => {
+  const buildArticleUrlFromId = useCallback((articleId?: string | null) => {
     if (!articleId || !articleUrlPrefix) {
       return null
     }
     return `${articleUrlPrefix}${articleId}`
-  }
+  }, [articleUrlPrefix])
 
-  const resolveCitationUrl = (rawUrl?: string | null) => {
+  const resolveCitationUrl = useCallback(
+    (rawUrl?: string | null) => {
     if (!rawUrl) {
       return null
     }
@@ -106,6 +116,13 @@ const Chat = () => {
     const trimmedUrl = rawUrl.trim()
     if (/^https?:\/\//i.test(trimmedUrl)) {
       return trimmedUrl
+    }
+
+    if (/^\d+$/.test(trimmedUrl)) {
+      const articleFromIdOnly = buildArticleUrlFromId(trimmedUrl)
+      if (articleFromIdOnly) {
+        return articleFromIdOnly
+      }
     }
 
     const articleIdMatch = trimmedUrl.match(/articleId=([^&"'>]+)/i)
@@ -117,24 +134,31 @@ const Chat = () => {
     }
 
     return trimmedUrl
-  }
+    },
+    [buildArticleUrlFromId]
+  )
 
   const formatCitationContent = (content?: string | null) => {
     if (!content) {
       return ''
     }
-
-    const sanitizedContent = DOMPurify.sanitize(content, { ALLOWED_TAGS: XSSAllowTags })
-    const hrefRegex = /href=(['"])(.*?)\1/g
-
-    return sanitizedContent.replace(hrefRegex, (match, quote, hrefValue) => {
-      const resolvedHref = resolveCitationUrl(hrefValue)
-      if (!resolvedHref) {
-        return match
-      }
-      return `href=${quote}${resolvedHref}${quote}`
-    })
+    return DOMPurify.sanitize(content, { ALLOWED_TAGS: XSSAllowTags, ALLOWED_ATTR: XSSAllowAttributes })
   }
+
+  const citationMarkdownComponents = useMemo<Components>(
+    () => ({
+      a: ({ node, ...anchorProps }) => {
+        const { href, children, ...rest } = anchorProps as AnchorHTMLAttributes<HTMLAnchorElement>
+        const finalHref = href ? (resolveCitationUrl(href) || href) : undefined
+        return (
+          <a {...rest} href={finalHref ?? undefined} target="_blank" rel="noopener noreferrer">
+            {children}
+          </a>
+        )
+      }
+    }),
+    [resolveCitationUrl]
+  )
 
   useEffect(() => {
     if (
@@ -165,10 +189,8 @@ const Chat = () => {
 
       // Check for question in URL parameters
       const questionParam = getQueryParam('q')
-      console.log('[QUERY_PARAM_DEBUG] URL query parameter "q":', questionParam)
       if (questionParam) {
         const decodedQuestion = decodeURIComponent(questionParam)
-        console.log('[QUERY_PARAM_DEBUG] Decoded question from URL:', decodedQuestion)
         setInitialQuestion(decodedQuestion)
       }
     }
@@ -182,7 +204,6 @@ const Chat = () => {
     const loadCategories = async () => {
       try {
         const categories = await fetchCategories()
-        console.log('[CATEGORY_DEBUG] Categories response from server:', categories)
         const mappedOptions: IDropdownOption[] = categories
           .filter(category => !!category?.name)
           .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
@@ -191,7 +212,6 @@ const Chat = () => {
             text: category.name
           }))
         setCategoryOptions([ALL_CATEGORY_OPTION, ...mappedOptions])
-        console.log('[CATEGORY_DEBUG] Dropdown options after merge:', [ALL_CATEGORY_OPTION, ...mappedOptions])
       } catch (error) {
         console.error('Failed to load categories.', error)
       }
@@ -359,14 +379,12 @@ const Chat = () => {
                 }
                 runningText = ''
               }
-            } catch (e) {
-              if (!(e instanceof SyntaxError)) {
-                console.error(e)
-                throw e
-              } else {
-                console.log('Incomplete message. Continuing...')
+              } catch (e) {
+                if (!(e instanceof SyntaxError)) {
+                  console.error(e)
+                  throw e
+                }
               }
-            }
           })
         }
         conversation.messages.push(toolMessage, assistantMessage)
@@ -531,14 +549,12 @@ const Chat = () => {
               } else if (result.error) {
                 throw Error(result.error)
               }
-            } catch (e) {
-              if (!(e instanceof SyntaxError)) {
-                console.error(e)
-                throw e
-              } else {
-                console.log('Incomplete message. Continuing...')
-              }
-            }
+      } catch (e) {
+        if (!(e instanceof SyntaxError)) {
+          console.error(e)
+          throw e
+        }
+      }
           })
         }
 
@@ -816,13 +832,8 @@ const Chat = () => {
   }, [showLoadingMessage, processMessages])
 
   const onShowCitation = (citation: Citation) => {
-    console.log('[CITATION_DEBUG] onShowCitation called with citation:', citation)
-    console.log('[CITATION_DEBUG] Citation content length:', citation?.content?.length || 0)
-    console.log('[CITATION_DEBUG] Citation title:', citation?.title)
-    console.log('[CITATION_DEBUG] Citation URL:', citation?.url)
     setActiveCitation(citation)
     setIsCitationPanelOpen(true)
-    console.log('[CITATION_DEBUG] Citation panel opened')
   }
 
   const onShowExecResult = (answerId: string) => {
@@ -839,24 +850,15 @@ const Chat = () => {
   }
 
   const parseCitationFromMessage = (message: ChatMessage) => {
-    console.log('[CITATION_DEBUG] Processing message:', message?.id, 'Role:', message?.role)
-    
     if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
-      console.log('[CITATION_DEBUG] Found tool message with string content')
       try {
         const toolMessage = JSON.parse(message.content) as ToolMessageContent
-        console.log('[CITATION_DEBUG] Parsed tool message:', toolMessage)
-        console.log('[CITATION_DEBUG] Citations found:', toolMessage.citations?.length || 0)
-        if (toolMessage.citations?.length > 0) {
-          console.log('[CITATION_DEBUG] First citation:', JSON.stringify(toolMessage.citations[0]))
-        }
         return toolMessage.citations
       } catch (error) {
         console.error('[CITATION_DEBUG] Error parsing tool message content:', error)
         return []
       }
     }
-    console.log('[CITATION_DEBUG] Message not eligible for citation parsing')
     return []
   }
 
@@ -1136,6 +1138,7 @@ const Chat = () => {
                 {/* Sanitize citation content and rewrite relative links to the configured base URL */}
                 <ReactMarkdown
                   linkTarget="_blank"
+                  components={citationMarkdownComponents}
                   className={styles.citationPanelContent}
                   children={formatCitationContent(activeCitation.content)}
                   remarkPlugins={[remarkGfm]}
