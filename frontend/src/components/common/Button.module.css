@@ -27,16 +27,19 @@
   border: 1px solid var(--sand-grey);
   background-color: var(--snow-white);
   color: var(--true-blue);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .historyButtonRoot:hover {
-  border: 1px solid var(--true-blue);
-  background-color: rgba(0, 25, 101, 0.05);
+  border: 1px solid var(--sea-blue);
+  background-color: var(--sea-blue);
+  color: var(--snow-white);
 }
 
 .historyButtonRoot:active {
-  border: 1px solid var(--true-blue);
-  background-color: rgba(0, 25, 101, 0.1);
+  border: 1px solid var(--sea-blue);
+  background-color: rgba(0, 90, 210, 0.85);
+  color: var(--snow-white);
 }
 
 @media (max-width: 480px) {
