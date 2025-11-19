@@ -137,7 +137,7 @@ const Chat = () => {
     () => ({
       a: ({ node, ...anchorProps }) => {
         const { href, children, ...rest } = anchorProps as AnchorHTMLAttributes<HTMLAnchorElement>
-        const finalHref = resolveCitationUrl(href || undefined) || href
+        const finalHref = href ? (resolveCitationUrl(href) || href) : undefined
         return (
           <a {...rest} href={finalHref ?? undefined} target="_blank" rel="noopener noreferrer">
             {children}
