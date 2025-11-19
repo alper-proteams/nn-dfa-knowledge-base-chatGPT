@@ -43,4 +43,18 @@ export const XSSAllowTags = [
   'li'
 ]
 
-export const XSSAllowAttributes = ['href']
+export const XSSAllowAttributes = [
+  'href',
+  'src',
+  'alt',
+  'width',
+  'height',
+  'title',
+  'class',
+  'frameborder',
+  'allow',
+  'allowfullscreen',
+  'loading',
+  'target',
+  'rel'
+]

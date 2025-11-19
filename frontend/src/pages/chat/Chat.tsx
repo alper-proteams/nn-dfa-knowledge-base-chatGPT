@@ -1,4 +1,13 @@
-import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type AnchorHTMLAttributes } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type AnchorHTMLAttributes
+} from 'react'
 import { CommandBarButton, Dialog, DialogType, IconButton, Stack, IDropdownOption } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
 
@@ -91,14 +100,15 @@ const Chat = () => {
   const NO_CONTENT_ERROR = 'No content in messages object.'
   const articleUrlPrefix = (appStateContext?.state.frontendSettings?.ui?.article_url_prefix ?? '').trim()
 
-  const buildArticleUrlFromId = (articleId?: string | null) => {
+  const buildArticleUrlFromId = useCallback((articleId?: string | null) => {
     if (!articleId || !articleUrlPrefix) {
       return null
     }
     return `${articleUrlPrefix}${articleId}`
-  }
+  }, [articleUrlPrefix])
 
-  const resolveCitationUrl = (rawUrl?: string | null) => {
+  const resolveCitationUrl = useCallback(
+    (rawUrl?: string | null) => {
     if (!rawUrl) {
       return null
     }
@@ -124,7 +134,9 @@ const Chat = () => {
     }
 
     return trimmedUrl
-  }
+    },
+    [buildArticleUrlFromId]
+  )
 
   const formatCitationContent = (content?: string | null) => {
     if (!content) {
@@ -145,7 +157,7 @@ const Chat = () => {
         )
       }
     }),
-    [articleUrlPrefix]
+    [resolveCitationUrl]
   )
 
   useEffect(() => {
