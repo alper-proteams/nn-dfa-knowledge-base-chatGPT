@@ -52,6 +52,18 @@ class _UiSettings(BaseSettings):
     article_url_prefix: str = ""
 
 
+class _CategoryServiceSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="DFA_BACKEND_",
+        env_file=DOTENV_PATH,
+        extra="ignore",
+        env_ignore_empty=True
+    )
+
+    categories_endpoint: str
+    api_token: str
+
+
 class _ChatHistorySettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="AZURE_COSMOSDB_",
@@ -120,6 +132,7 @@ class _AzureOpenAISettings(BaseSettings):
     presence_penalty: Optional[confloat(ge=-2.0, le=2.0)] = 0.0
     frequency_penalty: Optional[confloat(ge=-2.0, le=2.0)] = 0.0
     system_message: str = "You are an AI assistant that helps people find information."
+    system_message_category: Optional[str] = None
     preview_api_version: str = MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
     embedding_endpoint: Optional[str] = None
     embedding_key: Optional[str] = None
@@ -167,11 +180,11 @@ class _AzureOpenAISettings(BaseSettings):
     @model_validator(mode="after")
     def ensure_endpoint(self) -> Self:
         if self.endpoint:
-            return Self
+            return self
         
         elif self.resource:
             self.endpoint = f"https://{self.resource}.openai.azure.com"
-            return Self
+            return self
         
         raise ValidationError("AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is required")
         
@@ -769,11 +782,20 @@ class _AppSettings(BaseModel):
     azure_openai: _AzureOpenAISettings = _AzureOpenAISettings()
     search: _SearchCommonSettings = _SearchCommonSettings()
     ui: Optional[_UiSettings] = _UiSettings()
+    category_service: Optional[_CategoryServiceSettings] = None
     
     # Constructed properties
     chat_history: Optional[_ChatHistorySettings] = None
     datasource: Optional[DatasourcePayloadConstructor] = None
     promptflow: Optional[_PromptflowSettings] = None
+
+    @model_validator(mode="after")
+    def set_category_service_settings(self) -> Self:
+        try:
+            self.category_service = _CategoryServiceSettings()
+        except ValidationError:
+            self.category_service = None
+        return self
 
     @model_validator(mode="after")
     def set_promptflow_settings(self) -> Self:

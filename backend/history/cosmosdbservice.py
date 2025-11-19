@@ -139,6 +139,9 @@ class CosmosConversationClient():
             'content': input_message['content']
         }
 
+        if "category" in input_message:
+            message['category'] = input_message["category"]
+
         if self.enable_message_feedback:
             message['feedback'] = ''
         
@@ -180,4 +183,3 @@ class CosmosConversationClient():
             messages.append(item)
 
         return messages
-

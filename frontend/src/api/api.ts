@@ -1,6 +1,6 @@
 import { chatHistorySampleData } from '../constants/chatHistory'
 
-import { ChatMessage, Conversation, ConversationRequest, CosmosDBHealth, CosmosDBStatus, UserInfo } from './models'
+import { Category, ChatMessage, Conversation, ConversationRequest, CosmosDBHealth, CosmosDBStatus, UserInfo } from './models'
 
 export async function conversationApi(options: ConversationRequest, abortSignal: AbortSignal): Promise<Response> {
   const response = await fetch('/conversation', {
@@ -9,7 +9,8 @@ export async function conversationApi(options: ConversationRequest, abortSignal:
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      messages: options.messages
+      messages: options.messages,
+      ...(options.category ? { category: options.category } : {})
     }),
     signal: abortSignal
   })
@@ -98,7 +99,8 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
             role: msg.role,
             date: msg.createdAt,
             content: msg.content,
-            feedback: msg.feedback ?? undefined
+            feedback: msg.feedback ?? undefined,
+            category: msg.category ?? null
           }
           messages.push(message)
         })
@@ -121,11 +123,13 @@ export const historyGenerate = async (
   if (convId) {
     body = JSON.stringify({
       conversation_id: convId,
-      messages: options.messages
+      messages: options.messages,
+      ...(options.category ? { category: options.category } : {})
     })
   } else {
     body = JSON.stringify({
-      messages: options.messages
+      messages: options.messages,
+      ...(options.category ? { category: options.category } : {})
     })
   }
   const response = await fetch('/history/generate', {
@@ -349,6 +353,22 @@ export const historyMessageFeedback = async (messageId: string, feedback: string
         status: 500
       }
       return errRes
-    })
+  })
   return response
+}
+
+export const fetchCategories = async (): Promise<Category[]> => {
+  const response = await fetch('/categories', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load categories: ${response.status} ${response.statusText}`)
+  }
+
+  const payload = await response.json()
+  return Array.isArray(payload?.data) ? (payload.data as Category[]) : []
 }

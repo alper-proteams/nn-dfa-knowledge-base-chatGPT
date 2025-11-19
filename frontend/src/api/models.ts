@@ -25,6 +25,12 @@ export type ToolMessageContent = {
   intent: string
 }
 
+export type Category = {
+  id: number
+  name: string
+  order?: number | null
+}
+
 export type AzureSqlServerExecResult = {
   intent: string
   search_query: string | null
@@ -45,6 +51,7 @@ export type ChatMessage = {
   date: string
   feedback?: Feedback
   context?: string
+  category?: string | null
 }
 
 export type ExecResults = {
@@ -86,6 +93,7 @@ export type ChatResponse = {
 
 export type ConversationRequest = {
   messages: ChatMessage[]
+  category?: string | null
 }
 
 export type UserInfo = {

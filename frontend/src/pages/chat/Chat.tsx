@@ -1,5 +1,5 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CommandBarButton, Dialog, DialogType, IconButton, Stack } from '@fluentui/react'
+import { CommandBarButton, Dialog, DialogType, IconButton, Stack, IDropdownOption } from '@fluentui/react'
 import { ErrorCircleRegular, ShieldLockRegular, SquareRegular } from '@fluentui/react-icons'
 
 import ReactMarkdown from 'react-markdown'
@@ -29,6 +29,7 @@ import {
   ErrorMessage,
   ExecResults,
   getUserInfo,
+  fetchCategories,
   historyClear,
   historyGenerate,
   historyUpdate,
@@ -45,6 +46,8 @@ const enum messageStatus {
   Processing = 'Processing',
   Done = 'Done'
 }
+
+const ALL_CATEGORY_OPTION: IDropdownOption = { key: 'all', text: 'All' }
 
 const Chat = () => {
   const appStateContext = useContext(AppStateContext)
@@ -67,6 +70,8 @@ const Chat = () => {
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
+  const [categoryOptions, setCategoryOptions] = useState<IDropdownOption[]>([ALL_CATEGORY_OPTION])
+  const [selectedCategory, setSelectedCategory] = useState<IDropdownOption>(ALL_CATEGORY_OPTION)
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -84,6 +89,52 @@ const Chat = () => {
 
   const [ASSISTANT, TOOL, ERROR] = ['assistant', 'tool', 'error']
   const NO_CONTENT_ERROR = 'No content in messages object.'
+  const articleUrlPrefix = (appStateContext?.state.frontendSettings?.ui?.article_url_prefix ?? '').trim()
+
+  const buildArticleUrlFromId = (articleId?: string | null) => {
+    if (!articleId || !articleUrlPrefix) {
+      return null
+    }
+    return `${articleUrlPrefix}${articleId}`
+  }
+
+  const resolveCitationUrl = (rawUrl?: string | null) => {
+    if (!rawUrl) {
+      return null
+    }
+
+    const trimmedUrl = rawUrl.trim()
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+      return trimmedUrl
+    }
+
+    const articleIdMatch = trimmedUrl.match(/articleId=([^&"'>]+)/i)
+    if (articleIdMatch) {
+      const resolvedArticleUrl = buildArticleUrlFromId(articleIdMatch[1])
+      if (resolvedArticleUrl) {
+        return resolvedArticleUrl
+      }
+    }
+
+    return trimmedUrl
+  }
+
+  const formatCitationContent = (content?: string | null) => {
+    if (!content) {
+      return ''
+    }
+
+    const sanitizedContent = DOMPurify.sanitize(content, { ALLOWED_TAGS: XSSAllowTags })
+    const hrefRegex = /href=(['"])(.*?)\1/g
+
+    return sanitizedContent.replace(hrefRegex, (match, quote, hrefValue) => {
+      const resolvedHref = resolveCitationUrl(hrefValue)
+      if (!resolvedHref) {
+        return match
+      }
+      return `href=${quote}${resolvedHref}${quote}`
+    })
+  }
 
   useEffect(() => {
     if (
@@ -126,6 +177,28 @@ const Chat = () => {
   useEffect(() => {
     setIsLoading(appStateContext?.state.chatHistoryLoadingState === ChatHistoryLoadingState.Loading)
   }, [appStateContext?.state.chatHistoryLoadingState])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categories = await fetchCategories()
+        console.log('[CATEGORY_DEBUG] Categories response from server:', categories)
+        const mappedOptions: IDropdownOption[] = categories
+          .filter(category => !!category?.name)
+          .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+          .map(category => ({
+            key: category.id ? category.id.toString() : category.name,
+            text: category.name
+          }))
+        setCategoryOptions([ALL_CATEGORY_OPTION, ...mappedOptions])
+        console.log('[CATEGORY_DEBUG] Dropdown options after merge:', [ALL_CATEGORY_OPTION, ...mappedOptions])
+      } catch (error) {
+        console.error('Failed to load categories.', error)
+      }
+    }
+
+    loadCategories()
+  }, [])
 
   const getUserInfoList = async () => {
     if (!AUTH_ENABLED) {
@@ -193,6 +266,8 @@ const Chat = () => {
     }
   }
 
+  const getSelectedCategoryText = () => (selectedCategory?.key !== 'all' ? selectedCategory.text ?? null : null)
+
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
@@ -211,11 +286,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
+    const activeCategory = getSelectedCategoryText()
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      category: activeCategory ?? null
     }
 
     let conversation: Conversation | null | undefined
@@ -243,7 +320,8 @@ const Chat = () => {
     setMessages(conversation.messages)
 
     const request: ConversationRequest = {
-      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+      messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+      category: activeCategory ?? undefined
     }
 
     let result = {} as ChatResponse
@@ -346,11 +424,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
+    const activeCategory = getSelectedCategoryText()
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      category: activeCategory ?? null
     }
 
     let request: ConversationRequest
@@ -366,12 +446,14 @@ const Chat = () => {
       } else {
         conversation.messages.push(userMessage)
         request = {
-          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)]
+          messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
+          category: activeCategory ?? undefined
         }
       }
     } else {
       request = {
-        messages: [userMessage].filter(answer => answer.role !== ERROR)
+        messages: [userMessage].filter(answer => answer.role !== ERROR),
+        category: activeCategory ?? undefined
       }
       setMessages(request.messages)
     }
@@ -749,9 +831,10 @@ const Chat = () => {
 
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
-      const articleUrlPrefix = appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''
-      const citationUrl = `${articleUrlPrefix}${citation.url}`
-      window.open(citationUrl, '_blank')
+      const citationUrl = resolveCitationUrl(citation.url)
+      if (citationUrl) {
+        window.open(citationUrl, '_blank')
+      }
     }
   }
 
@@ -860,19 +943,30 @@ const Chat = () => {
                   <>
                     {answer.role === 'user' ? (
                       <div className={styles.chatMessageUser} tabIndex={0}>
-                        <div className={styles.chatMessageUserMessage}>
-                          {typeof answer.content === 'string' && answer.content ? (
-                            answer.content
-                          ) : Array.isArray(answer.content) ? (
-                            <>
-                              {answer.content[0].text}
-                              <img
-                                className={styles.uploadedImageChat}
-                                src={answer.content[1].image_url.url}
-                                alt="Uploaded Preview"
-                              />
-                            </>
-                          ) : null}
+                        <div className={styles.chatMessageUserContent}>
+                          <div className={styles.chatMessageUserMessage}>
+                            <div className={styles.chatMessageUserText}>
+                              {typeof answer.content === 'string' && answer.content ? (
+                                answer.content
+                              ) : Array.isArray(answer.content) ? (
+                                <>
+                                  {answer.content[0].text}
+                                  <img
+                                    className={styles.uploadedImageChat}
+                                    src={answer.content[1].image_url.url}
+                                    alt="Uploaded Preview"
+                                  />
+                                </>
+                              ) : null}
+                            </div>
+                            {answer.category && (
+                              <span
+                                className={styles.chatMessageUserCategory}
+                                aria-label={`Selected category ${answer.category}`}>
+                                Category: {answer.category}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ) : answer.role === 'assistant' ? (
@@ -924,7 +1018,7 @@ const Chat = () => {
               </div>
             )}
 
-            <Stack horizontal className={styles.chatInput}>
+            <Stack horizontal wrap className={styles.chatInput} verticalAlign="start" tokens={{ childrenGap: 16 }}>
               {isLoading && messages.length > 0 && (
                 <Stack
                   horizontal
@@ -940,7 +1034,7 @@ const Chat = () => {
                   </span>
                 </Stack>
               )}
-              <Stack>
+              <Stack.Item className={styles.iconColumn} align="center">
                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && (
                   <CommandBarButton
                     role="button"
@@ -984,21 +1078,29 @@ const Chat = () => {
                   onDismiss={handleErrorDialogClose}
                   dialogContentProps={errorDialogContentProps}
                   modalProps={modalProps}></Dialog>
-              </Stack>
-              <QuestionInput
-                clearOnSend
-                placeholder="Type a new question..."
-                disabled={isLoading}
-                onSend={(question, id) => {
-                  appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                    ? makeApiRequestWithCosmosDB(question, id)
-                    : makeApiRequestWithoutCosmosDB(question, id)
-                }}
-                conversationId={
-                  appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
-                }
-                initialQuestion={initialQuestion || undefined}
-              />
+              </Stack.Item>
+              <Stack.Item grow className={styles.inputGroup}>
+                <Stack className={styles.inputColumn}>
+                  <QuestionInput
+                    clearOnSend
+                    placeholder="Type a new question..."
+                    disabled={isLoading}
+                    categoryOptions={categoryOptions}
+                    selectedCategoryKey={selectedCategory.key}
+                    onCategoryChange={option => setSelectedCategory(option)}
+                    categoryPlaceholder="Category"
+                    onSend={(question, id) => {
+                      appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                        ? makeApiRequestWithCosmosDB(question, id)
+                        : makeApiRequestWithoutCosmosDB(question, id)
+                    }}
+                    conversationId={
+                      appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
+                    }
+                    initialQuestion={initialQuestion || undefined}
+                  />
+                </Stack>
+              </Stack.Item>
             </Stack>
           </div>
           {/* Citation Panel */}
@@ -1024,21 +1126,18 @@ const Chat = () => {
                 tabIndex={0}
                 title={
                   activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? `${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${activeCitation.url}`
+                    ? resolveCitationUrl(activeCitation.url) || activeCitation.title || ''
                     : activeCitation.title ?? ''
                 }
                 onClick={() => onViewSource(activeCitation)}>
                 {activeCitation.title}
               </h5>
               <div tabIndex={0}>
-                {/* Process citation content to extract article ID and create proper links */}
+                {/* Sanitize citation content and rewrite relative links to the configured base URL */}
                 <ReactMarkdown
                   linkTarget="_blank"
                   className={styles.citationPanelContent}
-                  children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags }).replace(
-                    /href="\/articles-scope\?articleId=(\d+)"/g, 
-                    (match, articleId) => `href="${appStateContext?.state.frontendSettings?.ui?.article_url_prefix || ''}${articleId}"`
-                  )}
+                  children={formatCitationContent(activeCitation.content)}
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
                 />
