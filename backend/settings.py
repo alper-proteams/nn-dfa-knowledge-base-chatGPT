@@ -114,7 +114,7 @@ class _AzureOpenAISettings(BaseSettings):
         env_ignore_empty=True
     )
     
-    model: str
+    model: Optional[str] = None
     key: Optional[str] = None
     resource: Optional[str] = None
     endpoint: Optional[str] = None
@@ -186,7 +186,8 @@ class _AzureOpenAISettings(BaseSettings):
             self.endpoint = f"https://{self.resource}.openai.azure.com"
             return self
         
-        raise ValidationError("AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is required")
+        logging.warning("AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is not configured; Azure OpenAI calls will fail until one is set.")
+        return self
         
     def extract_embedding_dependency(self) -> Optional[dict]:
         if self.embedding_name:
