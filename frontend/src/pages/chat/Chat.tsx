@@ -80,7 +80,7 @@ const Chat = () => {
   const [answerId, setAnswerId] = useState<string>('')
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
   const [categoryOptions, setCategoryOptions] = useState<IDropdownOption[]>([ALL_CATEGORY_OPTION])
-  const [selectedCategory, setSelectedCategory] = useState<IDropdownOption>(ALL_CATEGORY_OPTION)
+  const [selectedCategoryKeys, setSelectedCategoryKeys] = useState<string[]>([ALL_CATEGORY_OPTION.key.toString()])
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -99,6 +99,7 @@ const Chat = () => {
   const [ASSISTANT, TOOL, ERROR] = ['assistant', 'tool', 'error']
   const NO_CONTENT_ERROR = 'No content in messages object.'
   const articleUrlPrefix = (appStateContext?.state.frontendSettings?.ui?.article_url_prefix ?? '').trim()
+  const isAllCategoryKey = (key?: IDropdownOption['key']) => key?.toString().toLowerCase() === 'all'
 
   const buildArticleUrlFromId = useCallback((articleId?: string | null) => {
     if (!articleId || !articleUrlPrefix) {
@@ -248,6 +249,32 @@ const Chat = () => {
     })
   }
 
+  const selectedCategoryTexts = useMemo(() => {
+    if (!selectedCategoryKeys.length || selectedCategoryKeys.some(isAllCategoryKey)) {
+      return []
+    }
+
+    const selectedKeyStrings = new Set(selectedCategoryKeys.map(key => key?.toString()))
+
+    const optionMatches = categoryOptions
+      .filter(option => selectedKeyStrings.has(option.key?.toString() ?? ''))
+      .map(option => option.text?.toString() ?? option.key.toString())
+
+    const unmatchedKeys = selectedCategoryKeys
+      .map(key => key?.toString() ?? '')
+      .filter(key => !!key && !categoryOptions.some(option => option.key?.toString() === key))
+
+    return [...optionMatches, ...unmatchedKeys]
+  }, [categoryOptions, selectedCategoryKeys])
+
+  const formatCategoryForDisplay = (category?: ChatMessage['category']) => {
+    if (!category) return null
+    const categories = Array.isArray(category) ? category : [category]
+    const labels = categories.map(cat => cat?.toString().trim()).filter(Boolean)
+    if (!labels.length) return null
+    return labels.join(', ')
+  }
+
   const processResultMessage = (resultMessage: ChatMessage, userMessage: ChatMessage, conversationId?: string) => {
     if (typeof resultMessage.content === 'string' && resultMessage.content.includes('all_exec_results')) {
       const parsedExecResults = JSON.parse(resultMessage.content) as AzureSqlServerExecResults
@@ -286,8 +313,6 @@ const Chat = () => {
     }
   }
 
-  const getSelectedCategoryText = () => (selectedCategory?.key !== 'all' ? selectedCategory.text ?? null : null)
-
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
@@ -306,13 +331,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
-    const activeCategory = getSelectedCategoryText()
+    const activeCategories = selectedCategoryTexts
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
       date: new Date().toISOString(),
-      category: activeCategory ?? null
+      category: activeCategories.length ? activeCategories : null
     }
 
     let conversation: Conversation | null | undefined
@@ -341,7 +366,7 @@ const Chat = () => {
 
     const request: ConversationRequest = {
       messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
-      category: activeCategory ?? undefined
+      category: activeCategories.length ? activeCategories : undefined
     }
 
     let result = {} as ChatResponse
@@ -442,13 +467,13 @@ const Chat = () => {
           ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
-    const activeCategory = getSelectedCategoryText()
+    const activeCategories = selectedCategoryTexts
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
       content: questionContent as string,
       date: new Date().toISOString(),
-      category: activeCategory ?? null
+      category: activeCategories.length ? activeCategories : null
     }
 
     let request: ConversationRequest
@@ -465,13 +490,13 @@ const Chat = () => {
         conversation.messages.push(userMessage)
         request = {
           messages: [...conversation.messages.filter(answer => answer.role !== ERROR)],
-          category: activeCategory ?? undefined
+          category: activeCategories.length ? activeCategories : undefined
         }
       }
     } else {
       request = {
         messages: [userMessage].filter(answer => answer.role !== ERROR),
-        category: activeCategory ?? undefined
+        category: activeCategories.length ? activeCategories : undefined
       }
       setMessages(request.messages)
     }
@@ -941,66 +966,70 @@ const Chat = () => {
               </Stack>
             ) : (
               <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">
-                {messages.map((answer, index) => (
-                  <>
-                    {answer.role === 'user' ? (
-                      <div className={styles.chatMessageUser} tabIndex={0}>
-                        <div className={styles.chatMessageUserContent}>
-                          <div className={styles.chatMessageUserMessage}>
-                            <div className={styles.chatMessageUserText}>
-                              {typeof answer.content === 'string' && answer.content ? (
-                                answer.content
-                              ) : Array.isArray(answer.content) ? (
-                                <>
-                                  {answer.content[0].text}
-                                  <img
-                                    className={styles.uploadedImageChat}
-                                    src={answer.content[1].image_url.url}
-                                    alt="Uploaded Preview"
-                                  />
-                                </>
-                              ) : null}
+                {messages.map((answer, index) => {
+                  const categoryLabel = formatCategoryForDisplay(answer.category)
+
+                  return (
+                    <>
+                      {answer.role === 'user' ? (
+                        <div className={styles.chatMessageUser} tabIndex={0}>
+                          <div className={styles.chatMessageUserContent}>
+                            <div className={styles.chatMessageUserMessage}>
+                              <div className={styles.chatMessageUserText}>
+                                {typeof answer.content === 'string' && answer.content ? (
+                                  answer.content
+                                ) : Array.isArray(answer.content) ? (
+                                  <>
+                                    {answer.content[0].text}
+                                    <img
+                                      className={styles.uploadedImageChat}
+                                      src={answer.content[1].image_url.url}
+                                      alt="Uploaded Preview"
+                                    />
+                                  </>
+                                ) : null}
+                              </div>
+                              {categoryLabel && (
+                                <span
+                                  className={styles.chatMessageUserCategory}
+                                  aria-label={`Selected category ${categoryLabel}`}>
+                                  Category: {categoryLabel}
+                                </span>
+                              )}
                             </div>
-                            {answer.category && (
-                              <span
-                                className={styles.chatMessageUserCategory}
-                                aria-label={`Selected category ${answer.category}`}>
-                                Category: {answer.category}
-                              </span>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    ) : answer.role === 'assistant' ? (
-                      <div className={styles.chatMessageGpt}>
-                        {typeof answer.content === 'string' && (
-                          <Answer
-                            answer={{
-                              answer: answer.content,
-                              citations: parseCitationFromMessage(messages[index - 1]),
-                              generated_chart: parsePlotFromMessage(messages[index - 1]),
-                              message_id: answer.id,
-                              feedback: answer.feedback,
-                              exec_results: execResults
-                            }}
-                            onCitationClicked={c => onShowCitation(c)}
-                            onExectResultClicked={() => onShowExecResult(answerId)}
-                          />
-                        )}
-                      </div>
-                    ) : answer.role === ERROR ? (
-                      <div className={styles.chatMessageError}>
-                        <Stack horizontal className={styles.chatMessageErrorContent}>
-                          <ErrorCircleRegular className={styles.errorIcon} />
-                          <span>Error</span>
-                        </Stack>
-                        <span className={styles.chatMessageErrorContent}>
-                          {typeof answer.content === 'string' && answer.content}
-                        </span>
-                      </div>
-                    ) : null}
-                  </>
-                ))}
+                      ) : answer.role === 'assistant' ? (
+                        <div className={styles.chatMessageGpt}>
+                          {typeof answer.content === 'string' && (
+                            <Answer
+                              answer={{
+                                answer: answer.content,
+                                citations: parseCitationFromMessage(messages[index - 1]),
+                                generated_chart: parsePlotFromMessage(messages[index - 1]),
+                                message_id: answer.id,
+                                feedback: answer.feedback,
+                                exec_results: execResults
+                              }}
+                              onCitationClicked={c => onShowCitation(c)}
+                              onExectResultClicked={() => onShowExecResult(answerId)}
+                            />
+                          )}
+                        </div>
+                      ) : answer.role === ERROR ? (
+                        <div className={styles.chatMessageError}>
+                          <Stack horizontal className={styles.chatMessageErrorContent}>
+                            <ErrorCircleRegular className={styles.errorIcon} />
+                            <span>Error</span>
+                          </Stack>
+                          <span className={styles.chatMessageErrorContent}>
+                            {typeof answer.content === 'string' && answer.content}
+                          </span>
+                        </div>
+                      ) : null}
+                    </>
+                  )
+                })}
                 {showLoadingMessage && (
                   <>
                     <div className={styles.chatMessageGpt}>
@@ -1088,8 +1117,8 @@ const Chat = () => {
                     placeholder="Type a new question..."
                     disabled={isLoading}
                     categoryOptions={categoryOptions}
-                    selectedCategoryKey={selectedCategory.key}
-                    onCategoryChange={option => setSelectedCategory(option)}
+                    selectedCategoryKeys={selectedCategoryKeys}
+                    onCategoryChange={keys => setSelectedCategoryKeys(keys)}
                     categoryPlaceholder="Category"
                     onSend={(question, id) => {
                       appStateContext?.state.isCosmosDBAvailable?.cosmosDB

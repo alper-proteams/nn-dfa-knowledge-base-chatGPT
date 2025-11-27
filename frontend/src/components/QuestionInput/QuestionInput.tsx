@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect, useRef } from 'react'
+import { useContext, useState, useEffect, useRef, useMemo, type FormEvent } from 'react'
 import { FontIcon, Stack, TextField, Dropdown, IDropdownOption } from '@fluentui/react'
 import { SendRegular } from '@fluentui/react-icons'
 
@@ -17,8 +17,8 @@ interface Props {
   conversationId?: string
   initialQuestion?: string
   categoryOptions?: IDropdownOption[]
-  selectedCategoryKey?: string | number
-  onCategoryChange?: (option: IDropdownOption) => void
+  selectedCategoryKeys?: string[]
+  onCategoryChange?: (selectedKeys: string[]) => void
   categoryPlaceholder?: string
 }
 
@@ -30,7 +30,7 @@ export const QuestionInput = ({
   conversationId,
   initialQuestion,
   categoryOptions,
-  selectedCategoryKey,
+  selectedCategoryKeys,
   onCategoryChange,
   categoryPlaceholder
 }: Props) => {
@@ -38,6 +38,27 @@ export const QuestionInput = ({
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [autoSendTimer, setAutoSendTimer] = useState<number | null>(null);
   const questionSentRef = useRef(false);
+
+  const sortedCategoryOptions = useMemo(() => {
+    if (!categoryOptions?.length) {
+      return []
+    }
+
+    return [...categoryOptions].sort((a, b) => {
+      const aText = (a.text ?? '').toString()
+      const bText = (b.text ?? '').toString()
+      const aLower = aText.toLowerCase()
+      const bLower = bText.toLowerCase()
+      const aIsAll = aLower === 'all'
+      const bIsAll = bLower === 'all'
+
+      if (aIsAll && bIsAll) return 0
+      if (aIsAll) return -1
+      if (bIsAll) return 1
+
+      return aLower.localeCompare(bLower)
+    })
+  }, [categoryOptions])
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
@@ -172,7 +193,37 @@ export const QuestionInput = ({
 
   const sendQuestionDisabled = disabled || !question.trim()
 
-  const showCategoryDropdown = !!categoryOptions?.length && !!onCategoryChange
+  const showCategoryDropdown = !!sortedCategoryOptions.length && !!onCategoryChange
+
+  const isAllKey = (key?: string) => key?.toLowerCase() === 'all'
+
+  const handleCategoryChange = (_ev: FormEvent<HTMLDivElement>, option?: IDropdownOption) => {
+    if (!option) return
+
+    const currentKeys = new Set(selectedCategoryKeys ?? [])
+    const optionKey = option.key?.toString()
+
+    if (optionKey && isAllKey(optionKey)) {
+      onCategoryChange?.(option.selected ? [optionKey] : [])
+      return
+    }
+
+    currentKeys.forEach(key => isAllKey(key) && currentKeys.delete(key))
+
+    if (optionKey) {
+      if (option.selected) {
+        currentKeys.add(optionKey)
+      } else {
+        currentKeys.delete(optionKey)
+      }
+    }
+
+    const nextKeys =
+      currentKeys.size === 0
+        ? [sortedCategoryOptions[0]?.key?.toString() ?? optionKey ?? 'all']
+        : Array.from(currentKeys)
+    onCategoryChange?.(nextKeys)
+  }
 
   return (
     <Stack className={styles.questionInputWrapper}>
@@ -220,9 +271,10 @@ export const QuestionInput = ({
             <Dropdown
               ariaLabel="Select chat category"
               placeholder={categoryPlaceholder ?? 'Category'}
-              selectedKey={selectedCategoryKey}
-              onChange={(_, option) => option && onCategoryChange(option)}
-              options={categoryOptions ?? []}
+              multiSelect
+              selectedKeys={selectedCategoryKeys ?? []}
+              onChange={handleCategoryChange}
+              options={sortedCategoryOptions}
               className={styles.categoryDropdownControl}
               styles={{
                 root: { width: '100%' },

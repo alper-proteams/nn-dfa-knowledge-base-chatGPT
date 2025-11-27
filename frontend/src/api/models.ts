@@ -51,7 +51,7 @@ export type ChatMessage = {
   date: string
   feedback?: Feedback
   context?: string
-  category?: string | null
+  category?: string | string[] | null
 }
 
 export type ExecResults = {
@@ -93,7 +93,7 @@ export type ChatResponse = {
 
 export type ConversationRequest = {
   messages: ChatMessage[]
-  category?: string | null
+  category?: string | string[] | null
 }
 
 export type UserInfo = {
