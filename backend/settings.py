@@ -775,6 +775,10 @@ class _BaseSettings(BaseSettings):
     auth_enabled: bool = True
     sanitize_answer: bool = False
     use_promptflow: bool = False
+    retry_max_attempts: conint(ge=1, le=10) = 3
+    retry_fallback_phrase: str = (
+        "The requested information is not available in the retrieved data. Please try another query or topic."
+    )
 
 
 class _AppSettings(BaseModel):

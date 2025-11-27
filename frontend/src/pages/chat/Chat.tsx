@@ -81,6 +81,8 @@ const Chat = () => {
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
   const [categoryOptions, setCategoryOptions] = useState<IDropdownOption[]>([ALL_CATEGORY_OPTION])
   const [selectedCategoryKeys, setSelectedCategoryKeys] = useState<string[]>([ALL_CATEGORY_OPTION.key.toString()])
+  const [retryingInProgress, setRetryingInProgress] = useState<boolean>(false)
+  const retryHintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -107,6 +109,21 @@ const Chat = () => {
     }
     return `${articleUrlPrefix}${articleId}`
   }, [articleUrlPrefix])
+
+  const clearRetryHintTimer = useCallback(() => {
+    if (retryHintTimeout.current) {
+      clearTimeout(retryHintTimeout.current)
+      retryHintTimeout.current = null
+    }
+    setRetryingInProgress(false)
+  }, [])
+
+  const startRetryHintTimer = useCallback(() => {
+    clearRetryHintTimer()
+    retryHintTimeout.current = setTimeout(() => {
+      setRetryingInProgress(true)
+    }, 8000)
+  }, [clearRetryHintTimer])
 
   const resolveCitationUrl = useCallback(
     (rawUrl?: string | null) => {
@@ -316,6 +333,7 @@ const Chat = () => {
   const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
+    startRetryHintTimer()
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
@@ -354,6 +372,7 @@ const Chat = () => {
         console.error('Conversation not found.')
         setIsLoading(false)
         setShowLoadingMessage(false)
+        clearRetryHintTimer()
         abortFuncs.current = abortFuncs.current.filter(a => a !== abortController)
         return
       } else {
@@ -443,6 +462,7 @@ const Chat = () => {
     } finally {
       setIsLoading(false)
       setShowLoadingMessage(false)
+      clearRetryHintTimer()
       abortFuncs.current = abortFuncs.current.filter(a => a !== abortController)
       setProcessMessages(messageStatus.Done)
     }
@@ -453,6 +473,7 @@ const Chat = () => {
   const makeApiRequestWithCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
+    startRetryHintTimer()
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
     const questionContent =
@@ -484,6 +505,7 @@ const Chat = () => {
         console.error('Conversation not found.')
         setIsLoading(false)
         setShowLoadingMessage(false)
+        clearRetryHintTimer()
         abortFuncs.current = abortFuncs.current.filter(a => a !== abortController)
         return
       } else {
@@ -683,6 +705,7 @@ const Chat = () => {
     } finally {
       setIsLoading(false)
       setShowLoadingMessage(false)
+      clearRetryHintTimer()
       abortFuncs.current = abortFuncs.current.filter(a => a !== abortController)
       setProcessMessages(messageStatus.Done)
     }
@@ -783,6 +806,7 @@ const Chat = () => {
     abortFuncs.current.forEach(a => a.abort())
     setShowLoadingMessage(false)
     setIsLoading(false)
+    clearRetryHintTimer()
   }
 
   useEffect(() => {
@@ -851,6 +875,12 @@ const Chat = () => {
   useEffect(() => {
     if (AUTH_ENABLED !== undefined) getUserInfoList()
   }, [AUTH_ENABLED])
+
+  useEffect(() => {
+    return () => {
+      clearRetryHintTimer()
+    }
+  }, [clearRetryHintTimer])
 
   useLayoutEffect(() => {
     chatMessageStreamEnd.current?.scrollIntoView({ behavior: 'smooth' })
@@ -1035,7 +1065,7 @@ const Chat = () => {
                     <div className={styles.chatMessageGpt}>
                       <Answer
                         answer={{
-                          answer: 'Generating answer...',
+                          answer: retryingInProgress ? 'Retrying...' : 'Generating answer...',
                           citations: [],
                           generated_chart: null
                         }}

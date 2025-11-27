@@ -4,7 +4,7 @@ import logging
 import requests
 import dataclasses
 
-from typing import List
+from typing import List, Any, Optional
 
 DEBUG = os.environ.get("DEBUG", "false")
 if DEBUG.lower() == "true":
@@ -36,6 +36,131 @@ def parse_multi_columns(columns: str) -> list:
         return columns.split("|")
     else:
         return columns.split(",")
+
+
+def _normalize_text(text: Optional[str]) -> str:
+    if not isinstance(text, str):
+        return ""
+    return " ".join(text.lower().split())
+
+
+def _extract_citations(payload: Any) -> list:
+    if payload is None:
+        return []
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except Exception:
+            return []
+    if isinstance(payload, dict):
+        citations = payload.get("citations")
+        if isinstance(citations, list) and len(citations) > 0:
+            return citations
+    return []
+
+
+def _merge_citations(target: list, new_items: list) -> None:
+    for item in new_items:
+        if item not in target:
+            target.append(item)
+
+
+def response_contains_citations(messages: Optional[List[dict]]) -> bool:
+    """
+    Inspect messages (tool/context) for citations.
+    """
+    if not messages:
+        return False
+
+    for message in messages:
+        citations: list = []
+        if message.get("role") == "tool":
+            citations = _extract_citations(message.get("content"))
+        elif "context" in message:
+            citations = _extract_citations(message.get("context"))
+
+        if citations:
+            return True
+
+    return False
+
+
+def response_contains_fallback(messages: Optional[List[dict]], fallback_phrase: str) -> bool:
+    """
+    Detect whether the assistant reply matches the configured fallback phrase,
+    using case/whitespace-insensitive comparison.
+    """
+    if not fallback_phrase:
+        return False
+
+    normalized_fallback = _normalize_text(fallback_phrase)
+    if not normalized_fallback or not messages:
+        return False
+
+    assistant_text = ""
+    for message in reversed(messages):
+        if message.get("role") == "assistant" and isinstance(message.get("content"), str):
+            assistant_text = message.get("content")
+            break
+
+    return normalized_fallback in _normalize_text(assistant_text)
+
+
+def should_retry_response(messages: Optional[List[dict]], fallback_phrase: str) -> bool:
+    """
+    Decide if a response should be retried: retry when no citations are present
+    or when the assistant replied with the fallback phrase.
+    """
+    return (not response_contains_citations(messages)) or response_contains_fallback(messages, fallback_phrase)
+
+
+def extract_assistant_content_and_citations(chat_completion: Any) -> dict:
+    """
+    Extract assistant text and citations from a non-streaming chat completion response.
+    """
+    assistant_text = ""
+    citations: list = []
+
+    try:
+        if (
+            hasattr(chat_completion, "choices")
+            and chat_completion.choices
+            and hasattr(chat_completion.choices[0], "message")
+        ):
+            message = chat_completion.choices[0].message
+            assistant_text = getattr(message, "content", "") or ""
+            _merge_citations(citations, _extract_citations(getattr(message, "context", None)))
+            if not citations:
+                _merge_citations(citations, _extract_citations(getattr(message, "content", None)))
+    except Exception as error:
+        logging.debug("Failed to extract assistant content/citations: %s", error)
+
+    return {"assistant_text": assistant_text, "citations": citations}
+
+
+@dataclasses.dataclass
+class StreamResponseAccumulator:
+    assistant_text: str = ""
+    citations: list = dataclasses.field(default_factory=list)
+
+
+def accumulate_stream_response(accumulator: StreamResponseAccumulator, completion_chunk: Any) -> StreamResponseAccumulator:
+    """
+    Update an accumulator with assistant text and citations from a streaming chunk.
+    """
+    try:
+        if hasattr(completion_chunk, "choices") and completion_chunk.choices:
+            delta = completion_chunk.choices[0].delta
+            if delta:
+                chunk_text = getattr(delta, "content", None)
+                if chunk_text:
+                    accumulator.assistant_text += chunk_text
+
+                _merge_citations(accumulator.citations, _extract_citations(getattr(delta, "context", None)))
+    except Exception as error:
+        logging.debug("Failed to accumulate stream response: %s", error)
+
+    return accumulator
 
 
 def fetchUserGroups(userToken, nextLink=None):
@@ -229,4 +354,3 @@ def comma_separated_string_to_list(s: str) -> List[str]:
     Split comma-separated values into a list.
     '''
     return s.strip().replace(' ', '').split(',')
-

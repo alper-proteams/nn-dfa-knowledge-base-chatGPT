@@ -34,6 +34,9 @@ from backend.utils import (
     format_non_streaming_response,
     convert_to_pf_format,
     format_pf_non_streaming_response,
+    should_retry_response,
+    accumulate_stream_response,
+    StreamResponseAccumulator
 )
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
@@ -305,14 +308,31 @@ def prepare_model_args(request_body, request_headers):
     request_messages = request_body.get("messages", [])
     selected_category = request_body.get("category")
 
+    def _normalize_categories(raw_categories):
+        if raw_categories is None:
+            return []
+        if isinstance(raw_categories, str):
+            normalized = [raw_categories.strip()]
+        elif isinstance(raw_categories, (list, tuple, set)):
+            normalized = [str(item).strip() for item in raw_categories if str(item).strip()]
+        else:
+            normalized = [str(raw_categories).strip()]
+        return [item for item in normalized if item]
+
+    selected_categories = _normalize_categories(selected_category)
+
     def append_category_directive(base_message: str | None) -> str:
         base_message = (base_message or "").strip()
         category_directive_template = app_settings.azure_openai.system_message_category
-        if selected_category and isinstance(selected_category, str) and category_directive_template:
-            directive = category_directive_template.replace("{selected_category}", selected_category).replace("{selected_Category}", selected_category)
-            if base_message and not base_message.endswith(" "):
-                base_message = f"{base_message} "
-            base_message = f"{base_message}{directive}".strip()
+        if selected_categories and category_directive_template:
+            directives = [
+                category_directive_template.replace("{selected_category}", category).replace("{selected_Category}", category)
+                for category in selected_categories
+            ]
+            if directives:
+                if base_message and not base_message.endswith(" "):
+                    base_message = f"{base_message} "
+                base_message = f"{base_message}{' '.join(directives)}".strip()
         return base_message
 
     def build_system_message():
@@ -519,7 +539,7 @@ async def send_chat_request(request_body, request_headers):
     return response, apim_request_id
 
 
-async def complete_chat_request(request_body, request_headers):
+async def _complete_chat_request_attempt(request_body, request_headers):
     if app_settings.base_settings.use_promptflow:
         response = await promptflow_request(request_body)
         history_metadata = request_body.get("history_metadata", {})
@@ -529,22 +549,53 @@ async def complete_chat_request(request_body, request_headers):
             app_settings.promptflow.response_field_name,
             app_settings.promptflow.citations_field_name
         )
-    else:
-        response, apim_request_id = await send_chat_request(request_body, request_headers)
-        history_metadata = request_body.get("history_metadata", {})
-        non_streaming_response = format_non_streaming_response(response, history_metadata, apim_request_id)
 
-        if app_settings.azure_openai.function_call_azure_functions_enabled:
-            function_response = await process_function_call(response)  # Add await here
+    response, apim_request_id = await send_chat_request(request_body, request_headers)
+    history_metadata = request_body.get("history_metadata", {})
+    non_streaming_response = format_non_streaming_response(response, history_metadata, apim_request_id)
 
-            if function_response:
-                request_body["messages"].extend(function_response)
+    if app_settings.azure_openai.function_call_azure_functions_enabled:
+        function_response = await process_function_call(response)  # Add await here
 
-                response, apim_request_id = await send_chat_request(request_body, request_headers)
-                history_metadata = request_body.get("history_metadata", {})
-                non_streaming_response = format_non_streaming_response(response, history_metadata, apim_request_id)
+        if function_response:
+            request_body["messages"].extend(function_response)
+
+            response, apim_request_id = await send_chat_request(request_body, request_headers)
+            history_metadata = request_body.get("history_metadata", {})
+            non_streaming_response = format_non_streaming_response(response, history_metadata, apim_request_id)
 
     return non_streaming_response
+
+
+async def complete_chat_request_with_retry(request_body, request_headers):
+    max_attempts = app_settings.base_settings.retry_max_attempts or 1
+    fallback_phrase = app_settings.base_settings.retry_fallback_phrase or ""
+
+    attempt = 0
+    last_response = None
+
+    while attempt < max_attempts:
+        attempt += 1
+        attempt_request_body = copy.deepcopy(request_body)
+        last_response = await _complete_chat_request_attempt(attempt_request_body, request_headers)
+
+        messages = []
+        try:
+            messages = last_response.get("choices", [{}])[0].get("messages", [])
+        except Exception:
+            messages = []
+
+        should_retry = should_retry_response(messages, fallback_phrase)
+        if not should_retry or attempt >= max_attempts:
+            break
+
+        logging.info(
+            "Retrying chat request due to missing citations or fallback response (attempt %s of %s)",
+            attempt + 1,
+            max_attempts
+        )
+
+    return last_response
 
 class AzureOpenaiFunctionCallStreamState():
     def __init__(self):
@@ -613,44 +664,90 @@ async def process_function_call_stream(completionChunk, function_call_stream_sta
 async def stream_chat_request(request_body, request_headers):
     response, apim_request_id = await send_chat_request(request_body, request_headers)
     history_metadata = request_body.get("history_metadata", {})
-    
-    async def generate(apim_request_id, history_metadata):
-        if app_settings.azure_openai.function_call_azure_functions_enabled:
-            # Maintain state during function call streaming
-            function_call_stream_state = AzureOpenaiFunctionCallStreamState()
+    accumulator = StreamResponseAccumulator()
+    buffered_events = []
+
+    async def record_chunk(chunk, current_apim_request_id):
+        nonlocal accumulator
+        accumulator = accumulate_stream_response(accumulator, chunk)
+        formatted = format_stream_response(chunk, history_metadata, current_apim_request_id)
+        if formatted:
+            buffered_events.append(formatted)
+
+    if app_settings.azure_openai.function_call_azure_functions_enabled:
+        # Maintain state during function call streaming
+        function_call_stream_state = AzureOpenaiFunctionCallStreamState()
+        
+        async for completionChunk in response:
+            stream_state = await process_function_call_stream(completionChunk, function_call_stream_state, request_body, request_headers, history_metadata, apim_request_id)
             
-            async for completionChunk in response:
-                stream_state = await process_function_call_stream(completionChunk, function_call_stream_state, request_body, request_headers, history_metadata, apim_request_id)
-                
-                # No function call, asistant response
-                if stream_state == "INITIAL":
-                    yield format_stream_response(completionChunk, history_metadata, apim_request_id)
+            # No function call, asistant response
+            if stream_state == "INITIAL":
+                await record_chunk(completionChunk, apim_request_id)
 
-                # Function call stream completed, functions were executed.
-                # Append function calls and results to history and send to OpenAI, to stream the final answer.
-                if stream_state == "COMPLETED":
-                    request_body["messages"].extend(function_call_stream_state.function_messages)
-                    function_response, apim_request_id = await send_chat_request(request_body, request_headers)
-                    async for functionCompletionChunk in function_response:
-                        yield format_stream_response(functionCompletionChunk, history_metadata, apim_request_id)
+            # Function call stream completed, functions were executed.
+            # Append function calls and results to history and send to OpenAI, to stream the final answer.
+            if stream_state == "COMPLETED":
+                request_body["messages"].extend(function_call_stream_state.function_messages)
+                function_response, apim_request_id = await send_chat_request(request_body, request_headers)
+                async for functionCompletionChunk in function_response:
+                    await record_chunk(functionCompletionChunk, apim_request_id)
                 
-        else:
-            async for completionChunk in response:
-                yield format_stream_response(completionChunk, history_metadata, apim_request_id)
+    else:
+        async for completionChunk in response:
+            await record_chunk(completionChunk, apim_request_id)
 
-    return generate(apim_request_id=apim_request_id, history_metadata=history_metadata)
+    return buffered_events, accumulator
+
+
+async def stream_chat_request_with_retry(request_body, request_headers):
+    max_attempts = app_settings.base_settings.retry_max_attempts or 1
+    fallback_phrase = app_settings.base_settings.retry_fallback_phrase or ""
+
+    attempt = 0
+    final_buffer = []
+
+    while attempt < max_attempts:
+        attempt += 1
+        attempt_request_body = copy.deepcopy(request_body)
+
+        buffered_events, accumulator = await stream_chat_request(attempt_request_body, request_headers)
+        final_buffer = buffered_events
+
+        # Build a minimal message list for retry evaluation
+        messages = []
+        if accumulator.assistant_text:
+            messages.append({"role": "assistant", "content": accumulator.assistant_text})
+        if accumulator.citations:
+            messages.append({"role": "tool", "content": json.dumps({"citations": accumulator.citations})})
+
+        should_retry = should_retry_response(messages, fallback_phrase)
+        if not should_retry or attempt >= max_attempts:
+            break
+
+        logging.info(
+            "Retrying streaming chat request due to missing citations or fallback response (attempt %s of %s)",
+            attempt + 1,
+            max_attempts
+        )
+
+    async def replay_buffer():
+        for event in final_buffer:
+            yield event
+
+    return replay_buffer()
 
 
 async def conversation_internal(request_body, request_headers):
     try:
         if app_settings.azure_openai.stream and not app_settings.base_settings.use_promptflow:
-            result = await stream_chat_request(request_body, request_headers)
+            result = await stream_chat_request_with_retry(request_body, request_headers)
             response = await make_response(format_as_ndjson(result))
             response.timeout = None
             response.mimetype = "application/json-lines"
             return response
         else:
-            result = await complete_chat_request(request_body, request_headers)
+            result = await complete_chat_request_with_retry(request_body, request_headers)
             return jsonify(result)
 
     except Exception as ex:
