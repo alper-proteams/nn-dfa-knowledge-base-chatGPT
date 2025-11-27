@@ -983,11 +983,11 @@ const Chat = () => {
                 <h1 className={styles.chatEmptyStateTitle}>
                   Novo Nordisk
                   <br />
-                  FINANCE Knowledge Base AI Assistant
+                  Finance Knowledge Base AI Assistant
                 </h1>
                 <h2 className={styles.chatEmptyStateSubtitle}>
-                  Welcome to FINANCE Knowledge Base AI Assistant. This AI is trained to help you find information and answer
-                  questions about articles in the FINANCE Knowledge Base. Feel free to ask anything related to the
+                  Welcome to Finance Knowledge Base AI Assistant. This AI is trained to help you find information and answer
+                  questions about articles in the Finance Knowledge Base. Feel free to ask anything related to the
                   documentation.
                   <br />
                   <br />
