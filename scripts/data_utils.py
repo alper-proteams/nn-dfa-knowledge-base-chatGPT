@@ -1193,8 +1193,8 @@ def chunk_directory(
         num_tokens (int): The number of tokens to use for chunking.
         min_chunk_size (int): The minimum chunk size.
         url_prefix (str): The url prefix to use for the files. If None, the url will be None. If not None, the url will be url_prefix + relpath. 
-                            For example, if the directory path is /home/user/data and the url_prefix is https://example.com/data, 
-                            then the url for the file /home/user/data/file1.txt will be https://example.com/data/file1.txt
+                            For example, if the directory path is /home/user/docs and the url_prefix is https://example.com/docs, 
+                            then the url for the file /home/user/docs/file1.txt will be https://example.com/docs/file1.txt
         token_overlap (int): The number of tokens to overlap between chunks.
         extensions_to_process (List[str]): The list of extensions to process. 
         form_recognizer_client: Optional form recognizer client to use for pdf files.

@@ -277,7 +277,6 @@ export const QuestionInput = ({
               options={sortedCategoryOptions}
               className={styles.categoryDropdownControl}
               styles={{
-                root: { width: '100%' },
                 dropdown: { minHeight: 36 }
               }}
             />

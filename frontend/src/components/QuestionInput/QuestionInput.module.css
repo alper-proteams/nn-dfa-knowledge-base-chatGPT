@@ -114,7 +114,11 @@
   position: absolute;
   left: 24px;
   bottom: 16px;
-  width: 240px;
+  width: auto;
+  min-width: 200px;
+  max-width: calc(100% - 72px);
+  inline-size: fit-content;
+  max-inline-size: calc(100% - 72px);
   padding: 4px 12px 12px;
   background: var(--snow-white);
   box-shadow:
@@ -132,7 +136,8 @@
 }
 
 .categoryDropdownControl {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
 }
 
 .categoryDropdownControl :global(.ms-Dropdown-title) {
@@ -142,10 +147,15 @@
   padding-left: 0;
   padding-right: 28px;
   min-height: 40px;
-  line-height: 40px;
+  line-height: 1.4;
   color: var(--true-blue);
   font-weight: 500;
   font-size: 14px;
+  white-space: normal;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: 100%;
 }
 
 .categoryDropdownControl :global(.ms-Dropdown) {
@@ -174,6 +184,6 @@
 
 @media (max-width: 640px) {
   .categoryDropdownFloating {
-    width: calc(100% - 48px);
+    max-width: calc(100% - 48px);
   }
 }

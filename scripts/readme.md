@@ -85,11 +85,11 @@ If you have documents from multiple source websites, you can specify multiple pa
     {
         "data_paths": [
             {
-                "path": "data/source1",
+                "path": "<path to source 1>",
                 "url_prefix": "https://<URL for source 1>.com/"
             },
             {
-                "path": "data/source2",
+                "path": "<path to source 2>",
                 "url_prefix": "https://<URL for source 2>.com/"
             }
         ],
