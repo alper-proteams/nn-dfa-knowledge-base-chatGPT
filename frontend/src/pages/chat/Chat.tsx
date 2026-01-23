@@ -83,6 +83,16 @@ const Chat = () => {
   const [selectedCategoryKeys, setSelectedCategoryKeys] = useState<string[]>([ALL_CATEGORY_OPTION.key.toString()])
   const [retryingInProgress, setRetryingInProgress] = useState<boolean>(false)
   const retryHintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [loadingMessageText, setLoadingMessageText] = useState<string>('Generating answer...')
+  const [loadingElapsedSeconds, setLoadingElapsedSeconds] = useState<number>(0)
+  const latestAssistantIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') {
+        return i
+      }
+    }
+    return -1
+  })()
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -886,6 +896,39 @@ const Chat = () => {
     chatMessageStreamEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [showLoadingMessage, processMessages])
 
+  useEffect(() => {
+    if (!showLoadingMessage) {
+      setLoadingMessageText(retryingInProgress ? 'Retrying...' : 'Generating answer...')
+      return
+    }
+
+    const baseText = retryingInProgress ? 'Retrying' : 'Generating answer'
+    let dotCount = 0
+    setLoadingMessageText(baseText)
+    const intervalId = window.setInterval(() => {
+      setLoadingMessageText(`${baseText}${'.'.repeat(dotCount)}`)
+      dotCount = (dotCount + 1) % 4
+    }, 500)
+
+    return () => window.clearInterval(intervalId)
+  }, [showLoadingMessage, retryingInProgress])
+
+  useEffect(() => {
+    if (!showLoadingMessage) {
+      setLoadingElapsedSeconds(0)
+      return
+    }
+
+    const start = Date.now()
+    setLoadingElapsedSeconds(1)
+    const intervalId = window.setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - start) / 1000) + 1
+      setLoadingElapsedSeconds(elapsedSeconds)
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [showLoadingMessage])
+
   const onShowCitation = (citation: Citation) => {
     setActiveCitation(citation)
     setIsCitationPanelOpen(true)
@@ -1043,6 +1086,7 @@ const Chat = () => {
                               }}
                               onCitationClicked={c => onShowCitation(c)}
                               onExectResultClicked={() => onShowExecResult(answerId)}
+                              showFeedbackSection={index === latestAssistantIndex && !isLoading}
                             />
                           )}
                         </div>
@@ -1063,15 +1107,15 @@ const Chat = () => {
                 {showLoadingMessage && (
                   <>
                     <div className={styles.chatMessageGpt}>
-                      <Answer
-                        answer={{
-                          answer: retryingInProgress ? 'Retrying...' : 'Generating answer...',
-                          citations: [],
-                          generated_chart: null
-                        }}
-                        onCitationClicked={() => null}
-                        onExectResultClicked={() => null}
-                      />
+                      <div className={styles.loadingAnswerContainer}>
+                        <span className={styles.loadingAnswerText}>{loadingMessageText}</span>
+                        <span className={styles.loadingAnswerTime}>
+                          {loadingElapsedSeconds} second{loadingElapsedSeconds === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
                     </div>
                   </>
                 )}
