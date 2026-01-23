@@ -257,6 +257,37 @@
   display: flex;
 }
 
+.loadingAnswerContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8.1285px 12px;
+  gap: 12px;
+  width: 100%;
+  background: var(--snow-white);
+  box-shadow:
+    0px 1px 2px rgba(0, 25, 101, 0.14),
+    0px 0px 2px rgba(0, 25, 101, 0.12);
+  border-radius: 5.419px;
+}
+
+.loadingAnswerText {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--true-blue);
+}
+
+.loadingAnswerTime {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--granite-grey);
+  white-space: nowrap;
+}
+
 .chatMessageError {
   padding: 20px;
   border-radius: 8px;

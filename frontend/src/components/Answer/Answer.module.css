@@ -11,6 +11,12 @@
   border-radius: 5.419px;
 }
 
+.answerWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .answerText {
   font-style: normal;
   font-weight: 400;
@@ -26,10 +32,6 @@
   word-wrap: break-word;
   max-width: 800px;
   overflow-x: auto;
-}
-
-.answerHeader {
-  position: relative;
 }
 
 .answerFooter {
@@ -59,6 +61,34 @@
   flex: none;
   order: 1;
   flex-grow: 0;
+}
+
+.feedbackContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8.1285px 12px;
+  gap: 12px;
+  margin-top: 8px;
+  background: var(--snow-white);
+  box-shadow:
+    0px 1px 2px rgba(0, 25, 101, 0.14),
+    0px 0px 2px rgba(0, 25, 101, 0.12);
+  border-radius: 5.419px;
+}
+
+.feedbackPrompt {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--true-blue);
+}
+
+.feedbackButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .citationWrapper {
@@ -187,6 +217,11 @@ sup {
 @media (max-width: 480px) {
   .answerFooter {
     flex-direction: column-reverse;
+  }
+
+  .feedbackContainer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .citationWrapper {

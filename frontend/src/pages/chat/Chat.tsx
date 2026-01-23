@@ -68,6 +68,16 @@ const Chat = () => {
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null)
+  const [loadingMessageText, setLoadingMessageText] = useState<string>('Thinking...')
+  const [loadingElapsedSeconds, setLoadingElapsedSeconds] = useState<number>(0)
+  const latestAssistantIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') {
+        return i
+      }
+    }
+    return -1
+  })()
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -734,6 +744,39 @@ const Chat = () => {
     chatMessageStreamEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [showLoadingMessage, processMessages])
 
+  useEffect(() => {
+    if (!showLoadingMessage) {
+      setLoadingMessageText('Thinking...')
+      return
+    }
+
+    const baseText = 'Thinking'
+    let dotCount = 0
+    setLoadingMessageText(baseText)
+    const intervalId = window.setInterval(() => {
+      setLoadingMessageText(`${baseText}${'.'.repeat(dotCount)}`)
+      dotCount = (dotCount + 1) % 4
+    }, 500)
+
+    return () => window.clearInterval(intervalId)
+  }, [showLoadingMessage])
+
+  useEffect(() => {
+    if (!showLoadingMessage) {
+      setLoadingElapsedSeconds(0)
+      return
+    }
+
+    const start = Date.now()
+    setLoadingElapsedSeconds(1)
+    const intervalId = window.setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - start) / 1000) + 1
+      setLoadingElapsedSeconds(elapsedSeconds)
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [showLoadingMessage])
+
   const onShowCitation = (citation: Citation) => {
     console.log('[CITATION_DEBUG] onShowCitation called with citation:', citation)
     console.log('[CITATION_DEBUG] Citation content length:', citation?.content?.length || 0)
@@ -921,6 +964,7 @@ const Chat = () => {
                             }}
                             onCitationClicked={c => onShowCitation(c)}
                             onExectResultClicked={() => onShowExecResult(answerId)}
+                            showFeedbackSection={index === latestAssistantIndex && !isLoading}
                           />
                         )}
                       </div>
@@ -940,15 +984,12 @@ const Chat = () => {
                 {showLoadingMessage && (
                   <>
                     <div className={styles.chatMessageGpt}>
-                      <Answer
-                        answer={{
-                          answer: 'Generating answer...',
-                          citations: [],
-                          generated_chart: null
-                        }}
-                        onCitationClicked={() => null}
-                        onExectResultClicked={() => null}
-                      />
+                      <div className={styles.loadingAnswerContainer}>
+                        <span className={styles.loadingAnswerText}>{loadingMessageText}</span>
+                        <span className={styles.loadingAnswerTime}>
+                          {loadingElapsedSeconds} second{loadingElapsedSeconds === 1 ? '' : 's'}
+                        </span>
+                      </div>
                     </div>
                   </>
                 )}

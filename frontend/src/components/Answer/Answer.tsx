@@ -20,9 +20,10 @@ interface Props {
   answer: AskResponse
   onCitationClicked: (citedDocument: Citation) => void
   onExectResultClicked: (answerId: string) => void
+  showFeedbackSection?: boolean
 }
 
-export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Props) => {
+export const Answer = ({ answer, onCitationClicked, onExectResultClicked, showFeedbackSection }: Props) => {
   const initializeAnswerFeedback = (answer: AskResponse) => {
     if (answer.message_id == undefined) return undefined
     if (answer.feedback == undefined) return undefined
@@ -250,7 +251,7 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
     }
   }
   return (
-    <>
+    <div className={styles.answerWrapper}>
       <Stack className={styles.answerContainer} tabIndex={0}>
         <Stack.Item>
           <Stack horizontal grow>
@@ -266,35 +267,6 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
                 className={styles.answerText}
                 components={components}
               />}
-            </Stack.Item>
-            <Stack.Item className={styles.answerHeader}>
-              {FEEDBACK_ENABLED && answer.message_id !== undefined && (
-                <Stack horizontal horizontalAlign="space-between">
-                  <ThumbLike20Filled
-                    aria-hidden="false"
-                    aria-label="Like this response"
-                    onClick={() => onLikeResponseClicked()}
-                    style={
-                      feedbackState === Feedback.Positive ||
-                        appStateContext?.state.feedbackState[answer.message_id] === Feedback.Positive
-                        ? { color: 'darkgreen', cursor: 'pointer' }
-                        : { color: 'slategray', cursor: 'pointer' }
-                    }
-                  />
-                  <ThumbDislike20Filled
-                    aria-hidden="false"
-                    aria-label="Dislike this response"
-                    onClick={() => onDislikeResponseClicked()}
-                    style={
-                      feedbackState !== Feedback.Positive &&
-                        feedbackState !== Feedback.Neutral &&
-                        feedbackState !== undefined
-                        ? { color: 'darkred', cursor: 'pointer' }
-                        : { color: 'slategray', cursor: 'pointer' }
-                    }
-                  />
-                </Stack>
-              )}
             </Stack.Item>
           </Stack>
         </Stack.Item>
@@ -332,7 +304,7 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
             </Stack.Item>
           )}
           <Stack.Item className={styles.answerDisclaimerContainer}>
-            <span className={styles.answerDisclaimer}>AI-generated content may contain errors. Please verify information with the DFA Knowledge Base.</span>
+            <span className={styles.answerDisclaimer}>AI-generated content may contain errors. Please verify information with the Finance Knowledge Base.</span>
           </Stack.Item>
           {!!answer.exec_results?.length && (
             <Stack.Item onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? toggleIsRefAccordionOpen() : null)}>
@@ -379,6 +351,36 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
           </div>
         )}
       </Stack>
+      {FEEDBACK_ENABLED && answer.message_id !== undefined && showFeedbackSection && (
+        <Stack className={styles.feedbackContainer} horizontal horizontalAlign="space-between" verticalAlign="center">
+          <Text className={styles.feedbackPrompt}>How satisfied are you with this response?</Text>
+          <Stack horizontal tokens={{ childrenGap: 12 }} className={styles.feedbackButtons}>
+            <ThumbLike20Filled
+              aria-hidden="false"
+              aria-label="Like this response"
+              onClick={() => onLikeResponseClicked()}
+              style={
+                feedbackState === Feedback.Positive ||
+                  appStateContext?.state.feedbackState[answer.message_id] === Feedback.Positive
+                  ? { color: 'darkgreen', cursor: 'pointer' }
+                  : { color: 'slategray', cursor: 'pointer' }
+              }
+            />
+            <ThumbDislike20Filled
+              aria-hidden="false"
+              aria-label="Dislike this response"
+              onClick={() => onDislikeResponseClicked()}
+              style={
+                feedbackState !== Feedback.Positive &&
+                  feedbackState !== Feedback.Neutral &&
+                  feedbackState !== undefined
+                  ? { color: 'darkred', cursor: 'pointer' }
+                  : { color: 'slategray', cursor: 'pointer' }
+              }
+            />
+          </Stack>
+        </Stack>
+      )}
       <Dialog
         onDismiss={() => {
           resetFeedbackDialog()
@@ -417,6 +419,6 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked }: Prop
           </DefaultButton>
         </Stack>
       </Dialog>
-    </>
+    </div>
   )
 }
