@@ -181,16 +181,16 @@ const Layout = () => {
             </Link>
           </Stack>
           <Stack horizontal tokens={{ childrenGap: 8 }} className={styles.shareButtonContainer}>
+            {userLabel && (
+              <div className={styles.userInfo} title={userLabel} aria-label={`Signed in as ${userLabel}`}>
+                <span className={styles.userInfoText}>{userLabel}</span>
+              </div>
+            )}
             {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && ui?.show_chat_history_button !== false && (
               <HistoryButton
                 onClick={handleHistoryClick}
                 text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel}
               />
-            )}
-            {userLabel && (
-              <div className={styles.userInfo} title={userLabel} aria-label={`Signed in as ${userLabel}`}>
-                <span className={styles.userInfoText}>{userLabel}</span>
-              </div>
             )}
             {ui?.show_share_button && <ShareButton onClick={handleShareClick} text={shareLabel} />}
           </Stack>
