@@ -133,7 +133,17 @@ class CosmosConversationClient():
         else:
             return conversations[0]
  
-    async def create_message(self, uuid, conversation_id, user_id, input_message: dict):
+    async def create_message(
+        self,
+        uuid,
+        conversation_id,
+        user_id,
+        input_message: dict,
+        user_profile: dict | None = None,
+        auth_enabled: bool | None = None
+    ):
+        user_profile = user_profile or {}
+        auth_enabled_value = bool(auth_enabled) if auth_enabled is not None else False
         message = {
             'id': uuid,
             'type': 'message',
@@ -142,7 +152,11 @@ class CosmosConversationClient():
             'updatedAt': datetime.utcnow().isoformat(),
             'conversationId' : conversation_id,
             'role': input_message['role'],
-            'content': input_message['content']
+            'content': input_message['content'],
+            'firstName': user_profile.get('first_name', '') or '',
+            'lastName': user_profile.get('last_name', '') or '',
+            'email': user_profile.get('email', '') or '',
+            'authEnabled': auth_enabled_value
         }
 
         if self.enable_message_feedback:

@@ -639,6 +639,8 @@ async def add_conversation():
                 conversation_id=conversation_id,
                 user_id=user_id,
                 input_message=messages[-1],
+                user_profile=authenticated_user,
+                auth_enabled=app_settings.base_settings.auth_enabled,
             )
             if createdMessageValue == "Conversation not found":
                 raise Exception(
@@ -690,6 +692,8 @@ async def update_conversation():
                     conversation_id=conversation_id,
                     user_id=user_id,
                     input_message=messages[-2],
+                    user_profile=authenticated_user,
+                    auth_enabled=app_settings.base_settings.auth_enabled,
                 )
             # write the assistant message
             await current_app.cosmos_conversation_client.create_message(
@@ -697,6 +701,8 @@ async def update_conversation():
                 conversation_id=conversation_id,
                 user_id=user_id,
                 input_message=messages[-1],
+                user_profile=authenticated_user,
+                auth_enabled=app_settings.base_settings.auth_enabled,
             )
         else:
             raise Exception("No bot messages found")
