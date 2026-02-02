@@ -1,14 +1,85 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { Dialog, Stack, TextField } from '@fluentui/react'
 import { CopyRegular } from '@fluentui/react-icons'
 
-import { CosmosDBStatus } from '../../api'
+import { CosmosDBStatus, getUserInfo, UserInfo } from '../../api'
 import NNLogoWhite from '../../assets/nn_logo_white.png'
 import { HistoryButton, ShareButton } from '../../components/common/Button'
 import { AppStateContext } from '../../state/AppProvider'
 
 import styles from './Layout.module.css'
+
+type NormalizedClaim = {
+  type: string
+  value: string
+}
+
+const normalizeClaims = (claims: any[] | undefined): NormalizedClaim[] => {
+  if (!Array.isArray(claims)) {
+    return []
+  }
+
+  return claims
+    .map(claim => {
+      if (!claim || typeof claim !== 'object') {
+        return null
+      }
+      const type = (claim.typ ?? claim.type ?? '').toString().trim()
+      const value = (claim.val ?? claim.value ?? '').toString().trim()
+      if (!type || !value) {
+        return null
+      }
+      return { type, value }
+    })
+    .filter((claim): claim is NormalizedClaim => !!claim)
+}
+
+const claimMatches = (claimType: string, candidate: string) => {
+  const normalizedType = claimType.toLowerCase()
+  const normalizedCandidate = candidate.toLowerCase()
+  return (
+    normalizedType === normalizedCandidate ||
+    normalizedType.endsWith(`/${normalizedCandidate}`) ||
+    normalizedType.endsWith(`:${normalizedCandidate}`)
+  )
+}
+
+const findClaimValue = (claims: NormalizedClaim[], candidates: string[]) => {
+  for (const candidate of candidates) {
+    const match = claims.find(claim => claimMatches(claim.type, candidate))
+    if (match?.value) {
+      return match.value
+    }
+  }
+  return null
+}
+
+const buildUserLabel = (userInfo?: UserInfo | null) => {
+  const claims = normalizeClaims(userInfo?.user_claims)
+  if (!claims.length) {
+    return null
+  }
+
+  const givenName = findClaimValue(claims, ['given_name', 'givenname'])
+  const familyName = findClaimValue(claims, ['family_name', 'familyname', 'surname', 'lastname', 'last_name'])
+  const fullNameFromParts = [givenName, familyName].filter(Boolean).join(' ').trim()
+  const fullName = fullNameFromParts || findClaimValue(claims, ['name', 'displayname'])
+
+  const email = findClaimValue(claims, [
+    'email',
+    'emailaddress',
+    'emails',
+    'preferred_username',
+    'upn'
+  ])
+
+  if (fullName && email && fullName.toLowerCase() !== email.toLowerCase()) {
+    return `${fullName} | ${email}`
+  }
+
+  return fullName || email || null
+}
 
 const Layout = () => {
   const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false)
@@ -18,8 +89,14 @@ const Layout = () => {
   const [hideHistoryLabel, setHideHistoryLabel] = useState<string>('Hide chat history')
   const [showHistoryLabel, setShowHistoryLabel] = useState<string>('Show chat history')
   const [logo, setLogo] = useState('')
+  const [userLabel, setUserLabel] = useState<string | null>(null)
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
+  const authEnabledSetting = appStateContext?.state.frontendSettings?.auth_enabled
+  const isAuthEnabled = useMemo(
+    () => authEnabledSetting === true || authEnabledSetting === 'true',
+    [authEnabledSetting]
+  )
 
   const handleShareClick = () => {
     setIsSharePanelOpen(true)
@@ -45,6 +122,26 @@ const Layout = () => {
       setLogo(ui?.logo || NNLogoWhite)
     }
   }, [appStateContext?.state.isLoading])
+
+  useEffect(() => {
+    const loadUserLabel = async () => {
+      if (!isAuthEnabled) {
+        setUserLabel(null)
+        return
+      }
+
+      try {
+        const userInfoList = await getUserInfo()
+        const label = buildUserLabel(userInfoList?.[0])
+        setUserLabel(label)
+      } catch (error) {
+        console.error('Failed to load user info.', error)
+        setUserLabel(null)
+      }
+    }
+
+    loadUserLabel()
+  }, [isAuthEnabled])
 
   useEffect(() => {
     if (copyClicked) {
@@ -83,12 +180,17 @@ const Layout = () => {
               <h1 className={styles.headerTitle}>{ui?.title}</h1>
             </Link>
           </Stack>
-          <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
+          <Stack horizontal tokens={{ childrenGap: 8 }} className={styles.shareButtonContainer}>
             {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && ui?.show_chat_history_button !== false && (
               <HistoryButton
                 onClick={handleHistoryClick}
                 text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel}
               />
+            )}
+            {userLabel && (
+              <div className={styles.userInfo} title={userLabel} aria-label={`Signed in as ${userLabel}`}>
+                <span className={styles.userInfoText}>{userLabel}</span>
+              </div>
             )}
             {ui?.show_share_button && <ShareButton onClick={handleShareClick} text={shareLabel} />}
           </Stack>
