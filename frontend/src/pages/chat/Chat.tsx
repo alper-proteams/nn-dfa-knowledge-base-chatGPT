@@ -1116,9 +1116,6 @@ const Chat = () => {
                     </div>
                   </>
                 )}
-                    </div>
-                  </>
-                )}
                 <div ref={chatMessageStreamEnd} />
               </div>
             )}
