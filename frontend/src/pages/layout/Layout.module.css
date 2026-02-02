@@ -58,6 +58,27 @@
   color: var(--snow-white);
 }
 
+.userInfo {
+  display: flex;
+  align-items: center;
+  max-width: 280px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.userInfoText {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--snow-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .urlTextBox {
   font-style: normal;
   font-weight: 400;
@@ -107,5 +128,9 @@
 
   .headerIcon {
     margin-left: 26px;
+  }
+
+  .userInfo {
+    max-width: 140px;
   }
 }
