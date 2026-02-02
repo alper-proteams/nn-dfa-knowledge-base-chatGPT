@@ -45,14 +45,20 @@ class CosmosConversationClient():
             
         return True, "CosmosDB client initialized successfully"
 
-    async def create_conversation(self, user_id, title = ''):
+    async def create_conversation(self, user_id, title = '', user_profile: dict | None = None, auth_enabled: bool | None = None):
+        user_profile = user_profile or {}
+        auth_enabled_value = bool(auth_enabled) if auth_enabled is not None else False
         conversation = {
             'id': str(uuid.uuid4()),  
             'type': 'conversation',
             'createdAt': datetime.utcnow().isoformat(),  
             'updatedAt': datetime.utcnow().isoformat(),  
             'userId': user_id,
-            'title': title
+            'title': title,
+            'firstName': user_profile.get('first_name', '') or '',
+            'lastName': user_profile.get('last_name', '') or '',
+            'email': user_profile.get('email', '') or '',
+            'authEnabled': auth_enabled_value
         }
         ## TODO: add some error handling based on the output of the upsert_item call
         resp = await self.container_client.upsert_item(conversation)  
