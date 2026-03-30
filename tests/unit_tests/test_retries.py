@@ -83,12 +83,12 @@ async def test_stream_chat_request_with_retry_success_after_retry(monkeypatch):
             buffer = [
                 {"id": "1", "choices": [{"messages": [{"role": "assistant", "content": "Try 1"}]}]}
             ]
-            accumulator = StreamResponseAccumulator(assistant_text="Try 1", citations=[])
+            accumulator = StreamResponseAccumulator(assistant_text="Try 1", citations=[], apim_request_id="req-1")
         else:
             buffer = [
                 {"id": "2", "choices": [{"messages": [{"role": "assistant", "content": "Try 2"}]}]}
             ]
-            accumulator = StreamResponseAccumulator(assistant_text="Try 2", citations=[{"id": 3}])
+            accumulator = StreamResponseAccumulator(assistant_text="Try 2", citations=[{"id": 3}], apim_request_id="req-2")
         return buffer, accumulator
 
     monkeypatch.setattr(app_module, "stream_chat_request", fake_stream_request)
@@ -111,7 +111,7 @@ async def test_stream_chat_request_with_retry_failure_after_max(monkeypatch):
         buffer = [
             {"id": "1", "choices": [{"messages": [{"role": "assistant", "content": "No cite"}]}]}
         ]
-        accumulator = StreamResponseAccumulator(assistant_text="No cite", citations=[])
+        accumulator = StreamResponseAccumulator(assistant_text="No cite", citations=[], apim_request_id="req-1")
         return buffer, accumulator
 
     monkeypatch.setattr(app_module, "stream_chat_request", fake_stream_request)

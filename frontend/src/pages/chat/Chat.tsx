@@ -24,6 +24,7 @@ import styles from './Chat.module.css'
 import ChatLogo from '../../assets/ai_agent.png'
 import { XSSAllowTags, XSSAllowAttributes } from '../../constants/sanatizeAllowables'
 import { getQueryParam } from '../../utils/urlParams'
+import { citationDebugLog, summarizeCitationForDebug } from '../../utils/citationDebug'
 
 import {
   AzureSqlServerExecResults,
@@ -85,6 +86,7 @@ const Chat = () => {
   const retryHintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [loadingMessageText, setLoadingMessageText] = useState<string>('Generating answer...')
   const [loadingElapsedSeconds, setLoadingElapsedSeconds] = useState<number>(0)
+  const lastLoggedApimRequestId = useRef<string | null>(null)
   const latestAssistantIndex = (() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'assistant') {
@@ -403,6 +405,7 @@ const Chat = () => {
       const response = await conversationApi(request, abortController.signal)
       if (response?.body) {
         const reader = response.body.getReader()
+        lastLoggedApimRequestId.current = null
 
         let runningText = ''
         while (true) {
@@ -418,6 +421,11 @@ const Chat = () => {
                 runningText += obj
                 result = JSON.parse(runningText)
                 if (result.choices?.length > 0) {
+                  const apimRequestId = result['apim-request-id']
+                  if (apimRequestId && apimRequestId !== lastLoggedApimRequestId.current) {
+                    citationDebugLog('stream_response_apim_request_id', { apimRequestId })
+                    lastLoggedApimRequestId.current = apimRequestId
+                  }
                   result.choices[0].messages.forEach(msg => {
                     msg.id = result.id
                     msg.date = new Date().toISOString()
@@ -572,6 +580,7 @@ const Chat = () => {
       }
       if (response?.body) {
         const reader = response.body.getReader()
+        lastLoggedApimRequestId.current = null
 
         let runningText = ''
         while (true) {
@@ -591,6 +600,11 @@ const Chat = () => {
                   throw Error()
                 }
                 if (result.choices?.length > 0) {
+                  const apimRequestId = result['apim-request-id']
+                  if (apimRequestId && apimRequestId !== lastLoggedApimRequestId.current) {
+                    citationDebugLog('stream_response_apim_request_id', { apimRequestId })
+                    lastLoggedApimRequestId.current = apimRequestId
+                  }
                   result.choices[0].messages.forEach(msg => {
                     msg.id = result.id
                     msg.date = new Date().toISOString()
@@ -951,12 +965,27 @@ const Chat = () => {
     if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
       try {
         const toolMessage = JSON.parse(message.content) as ToolMessageContent
-        return toolMessage.citations
+        const citations = toolMessage.citations ?? []
+        citationDebugLog('parsed_tool_message_citations', {
+          citationCount: citations.length,
+          citations: citations.slice(0, 3).map(summarizeCitationForDebug)
+        })
+        citations.forEach((citation, index) => {
+          citationDebugLog('citation_metadata_completeness', {
+            citationIndex: index + 1,
+            ...summarizeCitationForDebug(citation)
+          })
+        })
+        return citations
       } catch (error) {
         console.error('[CITATION_DEBUG] Error parsing tool message content:', error)
         return []
       }
     }
+    citationDebugLog('no_tool_message_for_citation_parse', {
+      role: message?.role ?? null,
+      messageId: message?.id ?? null
+    })
     return []
   }
 

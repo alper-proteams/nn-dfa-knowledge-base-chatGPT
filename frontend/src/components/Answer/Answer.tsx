@@ -11,6 +11,7 @@ import supersub from 'remark-supersub'
 import { AskResponse, Citation, Feedback, historyMessageFeedback } from '../../api'
 import { XSSAllowTags, XSSAllowAttributes } from '../../constants/sanatizeAllowables'
 import { AppStateContext } from '../../state/AppProvider'
+import { citationDebugLog, summarizeCitationForDebug } from '../../utils/citationDebug'
 
 import { parseAnswer } from './AnswerParser'
 
@@ -180,14 +181,11 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked, showFe
   }, [appStateContext?.state.feedbackState, feedbackState, answer.message_id])
 
   const createCitationFilepath = (citation: Citation, index: number, truncate: boolean = false) => {
-    console.log('[CITATION_DEBUG] Creating citation filepath for:', citation, 'index:', index, 'truncate:', truncate)
     let citationFilename = ''
 
     if (citation.title) {
-      console.log('[CITATION_DEBUG] Using citation title:', citation.title)
       citationFilename = citation.title
     } else if (citation.filepath) {
-      console.log('[CITATION_DEBUG] Using citation filepath:', citation.filepath)
       const part_i = citation.part_index ?? (citation.chunk_id ? parseInt(citation.chunk_id) + 1 : '')
       if (truncate && citation.filepath.length > filePathTruncationLimit) {
         const citationLength = citation.filepath.length
@@ -196,13 +194,14 @@ export const Answer = ({ answer, onCitationClicked, onExectResultClicked, showFe
         citationFilename = `${citation.filepath} - Part ${part_i}`
       }
     } else if (citation.filepath && citation.reindex_id) {
-      console.log('[CITATION_DEBUG] Using citation filepath with reindex_id:', citation.reindex_id)
       citationFilename = `${citation.filepath} - Part ${citation.reindex_id}`
     } else {
-      console.log('[CITATION_DEBUG] No title or filepath, using default citation index:', index)
+      citationDebugLog('citation_title_fallback', {
+        citationIndex: index,
+        citation: summarizeCitationForDebug(citation)
+      })
       citationFilename = `Citation ${index}`
     }
-    console.log('[CITATION_DEBUG] Final citation filename:', citationFilename)
     return citationFilename
   }
 

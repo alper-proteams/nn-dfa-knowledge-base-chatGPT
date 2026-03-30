@@ -15,6 +15,10 @@ AZURE_SEARCH_PERMITTED_GROUPS_COLUMN = os.environ.get(
 )
 
 
+def is_citation_debug_enabled() -> bool:
+    return os.environ.get("DEBUG", "false").lower() == "true"
+
+
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):
         if dataclasses.is_dataclass(o):
@@ -44,6 +48,13 @@ def _normalize_text(text: Optional[str]) -> str:
     return " ".join(text.lower().split())
 
 
+def _truncate_text(text: str, max_length: int = 160) -> str:
+    normalized = " ".join(text.split())
+    if len(normalized) <= max_length:
+        return normalized
+    return normalized[: max_length - 3] + "..."
+
+
 def _extract_citations(payload: Any) -> list:
     if payload is None:
         return []
@@ -57,6 +68,163 @@ def _extract_citations(payload: Any) -> list:
         if isinstance(citations, list) and len(citations) > 0:
             return citations
     return []
+
+
+def _merge_unique_strings(target: list, new_items: list) -> None:
+    for item in new_items:
+        if isinstance(item, str) and item not in target:
+            target.append(item)
+
+
+def _get_model_extra(obj: Any) -> dict:
+    model_extra = getattr(obj, "model_extra", None)
+    if isinstance(model_extra, dict):
+        return model_extra
+    return {}
+
+
+def get_context_details(obj: Any) -> dict:
+    model_extra = _get_model_extra(obj)
+    model_extra_keys = sorted(str(key) for key in model_extra.keys())
+    extra_context = model_extra.get("context")
+    attr_context = getattr(obj, "context", None)
+
+    context = attr_context
+    context_source = None
+
+    if extra_context is not None:
+        context = extra_context
+        context_source = "model_extra"
+    elif attr_context is not None:
+        context_source = "attribute"
+
+    return {
+        "context": context,
+        "context_present": context is not None,
+        "context_source": context_source,
+        "model_extra_keys": model_extra_keys,
+    }
+
+
+def summarize_citations_for_debug(citations: list, limit: int = 3) -> list:
+    summaries = []
+    for citation in citations[:limit]:
+        if not isinstance(citation, dict):
+            summaries.append({"type": type(citation).__name__})
+            continue
+        content = citation.get("content")
+        metadata = citation.get("metadata")
+        summaries.append(
+            {
+                "title": citation.get("title"),
+                "filepath": citation.get("filepath"),
+                "url": citation.get("url"),
+                "id": citation.get("id"),
+                "chunk_id": citation.get("chunk_id"),
+                "content_length": len(content) if isinstance(content, str) else 0,
+                "metadata_length": len(metadata) if isinstance(metadata, str) else 0,
+            }
+        )
+    return summaries
+
+
+def get_citation_gap_stats(citations: list) -> dict:
+    missing_title_count = 0
+    missing_filepath_count = 0
+
+    for citation in citations:
+        if not isinstance(citation, dict):
+            missing_title_count += 1
+            missing_filepath_count += 1
+            continue
+
+        title = citation.get("title")
+        filepath = citation.get("filepath")
+        if not isinstance(title, str) or not title.strip():
+            missing_title_count += 1
+        if not isinstance(filepath, str) or not filepath.strip():
+            missing_filepath_count += 1
+
+    return {
+        "citation_count": len(citations),
+        "missing_title_count": missing_title_count,
+        "missing_filepath_count": missing_filepath_count,
+    }
+
+
+def build_request_debug_summary(request_body: dict, model_args: dict) -> dict:
+    request_messages = request_body.get("messages", [])
+    last_user_content = None
+
+    for message in reversed(request_messages):
+        if message and message.get("role") == "user":
+            last_user_content = message.get("content")
+            break
+
+    query_preview = None
+    if isinstance(last_user_content, str):
+        query_preview = _truncate_text(last_user_content)
+    elif isinstance(last_user_content, list):
+        parts = []
+        for content_item in last_user_content:
+            if not isinstance(content_item, dict):
+                continue
+            if content_item.get("type") == "text" and isinstance(content_item.get("text"), str):
+                parts.append(content_item["text"])
+            elif content_item.get("type") == "image_url":
+                parts.append("[image]")
+        query_preview = _truncate_text(" ".join(parts)) if parts else None
+
+    datasource = ((model_args.get("extra_body") or {}).get("data_sources") or [{}])[0]
+    parameters = datasource.get("parameters", {})
+    history_metadata = request_body.get("history_metadata", {})
+
+    return {
+        "conversation_id": request_body.get("conversation_id") or history_metadata.get("conversation_id"),
+        "query_preview": query_preview,
+        "model": model_args.get("model"),
+        "stream": model_args.get("stream"),
+        "datasource_type": datasource.get("type"),
+        "index_name": parameters.get("index_name"),
+        "query_type": parameters.get("query_type"),
+        "include_contexts": parameters.get("include_contexts"),
+        "fields_mapping": parameters.get("fields_mapping"),
+    }
+
+
+def get_retry_reason(messages: Optional[List[dict]], fallback_phrase: str) -> Optional[str]:
+    reasons = []
+
+    if not response_contains_citations(messages):
+        reasons.append("missing_citations")
+    if response_contains_fallback(messages, fallback_phrase):
+        reasons.append("fallback_phrase")
+
+    return "+".join(reasons) if reasons else None
+
+
+def citation_debug_log(
+    event: str,
+    *,
+    trace_id: Optional[str] = None,
+    attempt: Optional[int] = None,
+    apim_request_id: Optional[str] = None,
+    level: int = logging.DEBUG,
+    **details,
+) -> None:
+    if not is_citation_debug_enabled():
+        return
+
+    payload = {"event": event}
+    if trace_id is not None:
+        payload["trace_id"] = trace_id
+    if attempt is not None:
+        payload["attempt"] = attempt
+    if apim_request_id is not None:
+        payload["apim_request_id"] = apim_request_id
+    payload.update(details)
+
+    logging.log(level, "CITATION_DEBUG %s", json.dumps(payload, cls=JSONEncoder, sort_keys=True))
 
 
 def _merge_citations(target: list, new_items: list) -> None:
@@ -111,7 +279,7 @@ def should_retry_response(messages: Optional[List[dict]], fallback_phrase: str) 
     Decide if a response should be retried: retry when no citations are present
     or when the assistant replied with the fallback phrase.
     """
-    return (not response_contains_citations(messages)) or response_contains_fallback(messages, fallback_phrase)
+    return get_retry_reason(messages, fallback_phrase) is not None
 
 
 def extract_assistant_content_and_citations(chat_completion: Any) -> dict:
@@ -120,6 +288,11 @@ def extract_assistant_content_and_citations(chat_completion: Any) -> dict:
     """
     assistant_text = ""
     citations: list = []
+    context_details = {
+        "context_present": False,
+        "context_source": None,
+        "model_extra_keys": [],
+    }
 
     try:
         if (
@@ -129,19 +302,29 @@ def extract_assistant_content_and_citations(chat_completion: Any) -> dict:
         ):
             message = chat_completion.choices[0].message
             assistant_text = getattr(message, "content", "") or ""
-            _merge_citations(citations, _extract_citations(getattr(message, "context", None)))
+            context_details = get_context_details(message)
+            _merge_citations(citations, _extract_citations(context_details["context"]))
             if not citations:
                 _merge_citations(citations, _extract_citations(getattr(message, "content", None)))
     except Exception as error:
         logging.debug("Failed to extract assistant content/citations: %s", error)
 
-    return {"assistant_text": assistant_text, "citations": citations}
+    return {
+        "assistant_text": assistant_text,
+        "citations": citations,
+        "context_details": context_details,
+    }
 
 
 @dataclasses.dataclass
 class StreamResponseAccumulator:
     assistant_text: str = ""
     citations: list = dataclasses.field(default_factory=list)
+    chunk_count: int = 0
+    context_chunk_count: int = 0
+    context_sources: list = dataclasses.field(default_factory=list)
+    model_extra_keys: list = dataclasses.field(default_factory=list)
+    apim_request_id: Optional[str] = None
 
 
 def accumulate_stream_response(accumulator: StreamResponseAccumulator, completion_chunk: Any) -> StreamResponseAccumulator:
@@ -152,11 +335,18 @@ def accumulate_stream_response(accumulator: StreamResponseAccumulator, completio
         if hasattr(completion_chunk, "choices") and completion_chunk.choices:
             delta = completion_chunk.choices[0].delta
             if delta:
+                accumulator.chunk_count += 1
                 chunk_text = getattr(delta, "content", None)
                 if chunk_text:
                     accumulator.assistant_text += chunk_text
 
-                _merge_citations(accumulator.citations, _extract_citations(getattr(delta, "context", None)))
+                context_details = get_context_details(delta)
+                if context_details["context_present"]:
+                    accumulator.context_chunk_count += 1
+                if context_details["context_source"]:
+                    _merge_unique_strings(accumulator.context_sources, [context_details["context_source"]])
+                _merge_unique_strings(accumulator.model_extra_keys, context_details["model_extra_keys"])
+                _merge_citations(accumulator.citations, _extract_citations(context_details["context"]))
     except Exception as error:
         logging.debug("Failed to accumulate stream response: %s", error)
 
@@ -214,11 +404,12 @@ def format_non_streaming_response(chatCompletion, history_metadata, apim_request
     if len(chatCompletion.choices) > 0:
         message = chatCompletion.choices[0].message
         if message:
-            if hasattr(message, "context"):
+            context_details = get_context_details(message)
+            if context_details["context_present"]:
                 response_obj["choices"][0]["messages"].append(
                     {
                         "role": "tool",
-                        "content": json.dumps(message.context),
+                        "content": json.dumps(context_details["context"]),
                     }
                 )
             response_obj["choices"][0]["messages"].append(
@@ -245,15 +436,9 @@ def format_stream_response(chatCompletionChunk, history_metadata, apim_request_i
     if len(chatCompletionChunk.choices) > 0:
         delta = chatCompletionChunk.choices[0].delta
         if delta:
-            if hasattr(delta, "context"):
-                messageObj = {"role": "tool", "content": json.dumps(delta.context)}
-                response_obj["choices"][0]["messages"].append(messageObj)
-                return response_obj
-            if delta.role == "assistant" and hasattr(delta, "context"):
-                messageObj = {
-                    "role": "assistant",
-                    "context": delta.context,
-                }
+            context_details = get_context_details(delta)
+            if context_details["context_present"]:
+                messageObj = {"role": "tool", "content": json.dumps(context_details["context"])}
                 response_obj["choices"][0]["messages"].append(messageObj)
                 return response_obj
             if delta.tool_calls:
@@ -268,8 +453,8 @@ def format_stream_response(chatCompletionChunk, history_metadata, apim_request_i
                         "type": delta.tool_calls[0].type
                     }
                 }
-                if hasattr(delta, "context"):
-                    messageObj["context"] = json.dumps(delta.context)
+                if context_details["context_present"]:
+                    messageObj["context"] = json.dumps(context_details["context"])
                 response_obj["choices"][0]["messages"].append(messageObj)
                 return response_obj
             else:

@@ -65,28 +65,17 @@ export const QuestionInput = ({
   
   // Implement typing effect for initial question
   useEffect(() => {
-    console.log('[QUERY_PARAM_DEBUG] QuestionInput initialQuestion:', initialQuestion);
     if (initialQuestion && initialQuestion.trim() && !questionSentRef.current) {
-      console.log('[QUERY_PARAM_DEBUG] Setting up typing effect for question:', initialQuestion);
-      
       // Initialize with the first character and then add the rest one by one
-      console.log('[TYPING_DEBUG] Starting typing effect with initial question:', initialQuestion);
-      console.log('[TYPING_DEBUG] First character:', initialQuestion.charAt(0));
       setQuestion(initialQuestion.charAt(0));
       let currentIndex = 1;
       const fullText = initialQuestion;
-      console.log('[TYPING_DEBUG] Full text length:', fullText.length);
       
       // Function to add the next character
       const typeNextCharacter = () => {
         if (currentIndex < fullText.length) {
-          console.log('[TYPING_DEBUG] Adding character at index:', currentIndex);
-          console.log('[TYPING_DEBUG] Character to add:', fullText.charAt(currentIndex));
-          console.log('[TYPING_DEBUG] Current question before update:', question);
-          
           // Create a complete string up to the current index
           const newValue = fullText.substring(0, currentIndex + 1);
-          console.log('[TYPING_DEBUG] New question value:', newValue);
           setQuestion(newValue);
           
           currentIndex++;
@@ -95,9 +84,7 @@ export const QuestionInput = ({
         } else {
           // Typing finished, wait a moment before sending
           setAutoSendTimer(setTimeout(() => {
-            console.log('[QUERY_PARAM_DEBUG] Typing effect completed, sending question:', fullText);
             if (disabled) {
-              console.log('[QUERY_PARAM_DEBUG] Not sending question - disabled');
               return;
             }
             
@@ -105,13 +92,10 @@ export const QuestionInput = ({
             questionSentRef.current = true;
             
             const questionContent = fullText.toString();
-            console.log('[QUERY_PARAM_DEBUG] Prepared question content:', questionContent);
             
             if (conversationId) {
-              console.log('[QUERY_PARAM_DEBUG] Sending question with conversationId:', conversationId);
               onSend(questionContent, conversationId);
             } else {
-              console.log('[QUERY_PARAM_DEBUG] Sending question without conversationId');
               onSend(questionContent);
             }
             
@@ -123,15 +107,12 @@ export const QuestionInput = ({
       };
       
       // Start the typing effect with a small initial delay
-      console.log('[TYPING_DEBUG] Setting initial delay before starting typing effect');
       setAutoSendTimer(setTimeout(() => {
-        console.log('[TYPING_DEBUG] Initial delay completed, starting typing effect');
         typeNextCharacter();
       }, 300));
       
       return () => {
         if (autoSendTimer) {
-          console.log('[QUERY_PARAM_DEBUG] Clearing typing effect timer');
           clearTimeout(autoSendTimer);
         }
       };
@@ -156,21 +137,16 @@ export const QuestionInput = ({
   };
 
   const sendQuestion = () => {
-    console.log('[QUERY_PARAM_DEBUG] sendQuestion called, question:', question, 'disabled:', disabled);
     if (disabled || !question.trim()) {
-      console.log('[QUERY_PARAM_DEBUG] Not sending question - disabled or empty question');
       return
     }
 
     const questionTest: ChatMessage["content"] = base64Image ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }] : question.toString();
-    console.log('[QUERY_PARAM_DEBUG] Prepared question content:', questionTest);
 
     if (conversationId && questionTest !== undefined) {
-      console.log('[QUERY_PARAM_DEBUG] Sending question with conversationId:', conversationId);
       onSend(questionTest, conversationId)
       setBase64Image(null)
     } else {
-      console.log('[QUERY_PARAM_DEBUG] Sending question without conversationId');
       onSend(questionTest)
       setBase64Image(null)
     }

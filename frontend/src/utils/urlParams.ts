@@ -19,10 +19,6 @@ export const getQueryParams = (): Record<string, string> => {
  * @returns The value of the query parameter or null if not found
  */
 export const getQueryParam = (name: string): string | null => {
-  const url = window.location.href;
-  console.log('[QUERY_PARAM_DEBUG] Current URL:', url);
   const params = new URLSearchParams(window.location.search);
-  const value = params.get(name);
-  console.log(`[QUERY_PARAM_DEBUG] URL param "${name}" value:`, value);
-  return value;
+  return params.get(name);
 };

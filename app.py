@@ -29,9 +29,17 @@ from backend.settings import (
     MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
 )
 from backend.utils import (
+    build_request_debug_summary,
+    citation_debug_log,
+    extract_assistant_content_and_citations,
     format_as_ndjson,
     format_stream_response,
     format_non_streaming_response,
+    get_citation_gap_stats,
+    get_context_details,
+    get_retry_reason,
+    is_citation_debug_enabled,
+    summarize_citations_for_debug,
     convert_to_pf_format,
     format_pf_non_streaming_response,
     should_retry_response,
@@ -408,41 +416,13 @@ def prepare_model_args(request_body, request_headers):
                     ]
                 }
 
-    model_args_clean = copy.deepcopy(model_args)
-    if model_args_clean.get("extra_body"):
-        secret_params = [
-            "key",
-            "connection_string",
-            "embedding_key",
-            "encoded_api_key",
-            "api_key",
-        ]
-        for secret_param in secret_params:
-            if model_args_clean["extra_body"]["data_sources"][0]["parameters"].get(
-                secret_param
-            ):
-                model_args_clean["extra_body"]["data_sources"][0]["parameters"][
-                    secret_param
-                ] = "*****"
-        authentication = model_args_clean["extra_body"]["data_sources"][0][
-            "parameters"
-        ].get("authentication", {})
-        for field in authentication:
-            if field in secret_params:
-                model_args_clean["extra_body"]["data_sources"][0]["parameters"][
-                    "authentication"
-                ][field] = "*****"
-        embeddingDependency = model_args_clean["extra_body"]["data_sources"][0][
-            "parameters"
-        ].get("embedding_dependency", {})
-        if "authentication" in embeddingDependency:
-            for field in embeddingDependency["authentication"]:
-                if field in secret_params:
-                    model_args_clean["extra_body"]["data_sources"][0]["parameters"][
-                        "embedding_dependency"
-                    ]["authentication"][field] = "*****"
-
-    logging.debug(f"REQUEST BODY: {json.dumps(model_args_clean, indent=4)}")
+    if is_citation_debug_enabled():
+        citation_debug_log(
+            "request_summary",
+            trace_id=request_body.get("_trace_id"),
+            attempt=request_body.get("_retry_attempt"),
+            **build_request_debug_summary(request_body, model_args),
+        )
 
     return model_args
 
@@ -532,6 +512,14 @@ async def send_chat_request(request_body, request_headers):
         raw_response = await azure_openai_client.chat.completions.with_raw_response.create(**model_args)
         response = raw_response.parse()
         apim_request_id = raw_response.headers.get("apim-request-id") 
+        citation_debug_log(
+            "aoai_response_received",
+            trace_id=request_body.get("_trace_id"),
+            attempt=request_body.get("_retry_attempt"),
+            apim_request_id=apim_request_id,
+            stream=model_args.get("stream"),
+            model=model_args.get("model"),
+        )
     except Exception as e:
         logging.exception("Exception in send_chat_request")
         raise e
@@ -564,6 +552,21 @@ async def _complete_chat_request_attempt(request_body, request_headers):
             history_metadata = request_body.get("history_metadata", {})
             non_streaming_response = format_non_streaming_response(response, history_metadata, apim_request_id)
 
+    extraction = extract_assistant_content_and_citations(response)
+    citation_gap_stats = get_citation_gap_stats(extraction["citations"])
+    citation_debug_log(
+        "non_stream_attempt_summary",
+        trace_id=request_body.get("_trace_id"),
+        attempt=request_body.get("_retry_attempt"),
+        apim_request_id=apim_request_id,
+        assistant_text_length=len(extraction["assistant_text"]),
+        context_present=extraction["context_details"]["context_present"],
+        context_source=extraction["context_details"]["context_source"],
+        model_extra_keys=extraction["context_details"]["model_extra_keys"],
+        citation_summary=summarize_citations_for_debug(extraction["citations"]),
+        **citation_gap_stats,
+    )
+
     return non_streaming_response
 
 
@@ -577,6 +580,7 @@ async def complete_chat_request_with_retry(request_body, request_headers):
     while attempt < max_attempts:
         attempt += 1
         attempt_request_body = copy.deepcopy(request_body)
+        attempt_request_body["_retry_attempt"] = attempt
         last_response = await _complete_chat_request_attempt(attempt_request_body, request_headers)
 
         messages = []
@@ -585,14 +589,28 @@ async def complete_chat_request_with_retry(request_body, request_headers):
         except Exception:
             messages = []
 
-        should_retry = should_retry_response(messages, fallback_phrase)
+        retry_reason = get_retry_reason(messages, fallback_phrase)
+        should_retry = retry_reason is not None
+        citation_debug_log(
+            "retry_decision",
+            trace_id=request_body.get("_trace_id"),
+            attempt=attempt,
+            apim_request_id=last_response.get("apim-request-id"),
+            retry_reason=retry_reason or "none",
+            should_retry=should_retry,
+        )
         if not should_retry or attempt >= max_attempts:
             break
 
-        logging.info(
-            "Retrying chat request due to missing citations or fallback response (attempt %s of %s)",
-            attempt + 1,
-            max_attempts
+        citation_debug_log(
+            "retrying_non_stream_request",
+            trace_id=request_body.get("_trace_id"),
+            attempt=attempt,
+            apim_request_id=last_response.get("apim-request-id"),
+            retry_reason=retry_reason,
+            next_attempt=attempt + 1,
+            max_attempts=max_attempts,
+            level=logging.INFO,
         )
 
     return last_response
@@ -670,9 +688,27 @@ async def stream_chat_request(request_body, request_headers):
     async def record_chunk(chunk, current_apim_request_id):
         nonlocal accumulator
         accumulator = accumulate_stream_response(accumulator, chunk)
+        accumulator.apim_request_id = current_apim_request_id
+        chunk_context_details = {}
+        if hasattr(chunk, "choices") and chunk.choices:
+            delta = chunk.choices[0].delta
+            if delta:
+                chunk_context_details = get_context_details(delta)
         formatted = format_stream_response(chunk, history_metadata, current_apim_request_id)
         if formatted:
             buffered_events.append(formatted)
+        if chunk_context_details.get("context_present") or chunk_context_details.get("model_extra_keys"):
+            citation_debug_log(
+                "stream_chunk_context",
+                trace_id=request_body.get("_trace_id"),
+                attempt=request_body.get("_retry_attempt"),
+                apim_request_id=current_apim_request_id,
+                chunk_index=accumulator.chunk_count,
+                context_present=chunk_context_details.get("context_present", False),
+                context_source=chunk_context_details.get("context_source"),
+                model_extra_keys=chunk_context_details.get("model_extra_keys", []),
+                citation_count=len(accumulator.citations),
+            )
 
     if app_settings.azure_openai.function_call_azure_functions_enabled:
         # Maintain state during function call streaming
@@ -710,6 +746,7 @@ async def stream_chat_request_with_retry(request_body, request_headers):
     while attempt < max_attempts:
         attempt += 1
         attempt_request_body = copy.deepcopy(request_body)
+        attempt_request_body["_retry_attempt"] = attempt
 
         buffered_events, accumulator = await stream_chat_request(attempt_request_body, request_headers)
         final_buffer = buffered_events
@@ -721,14 +758,36 @@ async def stream_chat_request_with_retry(request_body, request_headers):
         if accumulator.citations:
             messages.append({"role": "tool", "content": json.dumps({"citations": accumulator.citations})})
 
-        should_retry = should_retry_response(messages, fallback_phrase)
+        retry_reason = get_retry_reason(messages, fallback_phrase)
+        should_retry = retry_reason is not None
+        citation_gap_stats = get_citation_gap_stats(accumulator.citations)
+        citation_debug_log(
+            "stream_attempt_summary",
+            trace_id=request_body.get("_trace_id"),
+            attempt=attempt,
+            apim_request_id=accumulator.apim_request_id,
+            total_chunks=accumulator.chunk_count,
+            context_chunk_count=accumulator.context_chunk_count,
+            context_sources=accumulator.context_sources,
+            model_extra_keys=accumulator.model_extra_keys,
+            assistant_text_length=len(accumulator.assistant_text),
+            citation_summary=summarize_citations_for_debug(accumulator.citations),
+            retry_reason=retry_reason or "none",
+            should_retry=should_retry,
+            **citation_gap_stats,
+        )
         if not should_retry or attempt >= max_attempts:
             break
 
-        logging.info(
-            "Retrying streaming chat request due to missing citations or fallback response (attempt %s of %s)",
-            attempt + 1,
-            max_attempts
+        citation_debug_log(
+            "retrying_stream_request",
+            trace_id=request_body.get("_trace_id"),
+            attempt=attempt,
+            apim_request_id=accumulator.apim_request_id,
+            retry_reason=retry_reason,
+            next_attempt=attempt + 1,
+            max_attempts=max_attempts,
+            level=logging.INFO,
         )
 
     async def replay_buffer():
@@ -740,6 +799,7 @@ async def stream_chat_request_with_retry(request_body, request_headers):
 
 async def conversation_internal(request_body, request_headers):
     try:
+        request_body["_trace_id"] = request_body.get("_trace_id") or str(uuid.uuid4())
         if app_settings.azure_openai.stream and not app_settings.base_settings.use_promptflow:
             result = await stream_chat_request_with_retry(request_body, request_headers)
             response = await make_response(format_as_ndjson(result))

@@ -82,6 +82,7 @@ export type ChatResponse = {
   model: string
   created: number
   object: ChatCompletionType
+  'apim-request-id'?: string
   choices: ChatResponseChoice[]
   history_metadata: {
     conversation_id: string
